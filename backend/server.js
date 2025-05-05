@@ -6,6 +6,7 @@ const userRouter = require("./routes/userRoutes");
 const PORT = process.env.PORT || 5000;
 const errorHandler = require("./middleware/errorMiddleware");
 const connectDb = require("./config/db");
+const ticketRouter = require("./routes/ticketRoutes");
 
 connectDb();
 
@@ -24,6 +25,8 @@ app.use(
   })
 );
 app.use("/api/users", userRouter);
+
+app.use("/api/tickets", ticketRouter);
 
 app.use(errorHandler);
 
