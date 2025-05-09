@@ -14,7 +14,6 @@ const getTickets = async (req, res) => {
 };
 
 const createTicket = async (req, res) => {
-  console.log(req);
   const { product, description } = req.body;
   if (!description || !product) {
     res.status(400);
@@ -35,7 +34,6 @@ const createTicket = async (req, res) => {
 };
 
 const getTicket = async (req, res) => {
-  console.log(req.user);
   const user = await User.findById(req.user.id);
   if (!user) {
     res.status(401);

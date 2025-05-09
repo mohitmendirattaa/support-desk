@@ -5,7 +5,6 @@ import { useSelector } from "react-redux";
 
 function PrivateRoute({ children }) {
   const { user } = useSelector((state) => state.auth);
-  console.log(user);
   if (user) {
     return children;
   }

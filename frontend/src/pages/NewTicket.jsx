@@ -66,7 +66,8 @@ function NewTicket() {
               className="form-control"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-            ></textarea>
+              style={{ resize: "none" }}
+            />
           </div>
           <div className="form-control">
             <button className="btn btn-block">Submit</button>

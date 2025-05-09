@@ -30,7 +30,6 @@ function Register() {
         email,
         password,
       };
-      console.log("testing");
       dispatch(register(userData))
         .unwrap()
         .then((data) => {
