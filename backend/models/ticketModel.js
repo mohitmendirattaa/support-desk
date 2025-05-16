@@ -9,17 +9,44 @@ const ticketSchema = mongoose.Schema(
     },
     description: {
       type: String,
-      required: [true, "please enter a description of the issue"],
+      required: [true, "Please enter a description of the issue"],
     },
     status: {
       type: String,
       enum: ["new", "open", "closed"],
       default: "new",
     },
-    product: {
+    /*   product: {
       type: String,
-      required: [true, "please select a product"],
+      // required: [true, "Please select a product"],
       enum: ["iPhone", "MacBook Pro", "iMac", "iPad"],
+    }, */
+    service: {
+      type: String,
+      required: [true, "Please select service"],
+      enum: ["Incident", "Service"],
+    },
+    category: {
+      type: String,
+      required: [true, "Please select a category"],
+      enum: ["Digital", "SAP"],
+    },
+    priority: {
+      type: String,
+      required: [true, "Please select the priority"],
+      enum: ["High", "Medium", "Low"],
+    },
+    module: {
+      type: String,
+      required: [true, "Please select the module"],
+      enum: ["MM", "SD", "FI", "PP", "PM", "PS", "QM", "Other"],
+    },
+    startDate: {
+      type: Date,
+      default: Date.now,
+    },
+    endDate: {
+      type: Date,
     },
   },
   {

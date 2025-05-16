@@ -41,7 +41,13 @@ function Ticket() {
   if (!ticket) {
     return <Spinner />;
   }
-  console.log(ticket);
+
+  const startDateFormatted = ticket.startDate
+    ? new Date(ticket.startDate).toLocaleDateString("en-IN")
+    : "N/A";
+  const endDateFormatted = ticket.endDate
+    ? new Date(ticket.endDate).toLocaleDateString("en-IN")
+    : "N/A";
 
   return (
     <div className="ticket-page">
@@ -56,7 +62,26 @@ function Ticket() {
         <h3>
           Date Submitted: {new Date(ticket.createdAt).toLocaleString("en-IN")}
         </h3>
-        <h3>Product: {ticket.product}</h3>
+        <div className="date-layout">
+          <div className="start-date">
+            <h3>
+              Start Date:
+              <span className="status-date">{startDateFormatted}</span>
+            </h3>
+          </div>
+          <div className="end-date">
+            <h3>
+              End Date: <span className="status-date">{endDateFormatted}</span>
+            </h3>
+          </div>
+        </div>
+        <div className="ticket-desc">
+          <h3>Priority: {ticket.priority}</h3>
+          <h3>Service: {ticket.service}</h3>
+          <h3>Category: {ticket.category}</h3>
+          <h3>Module: {ticket.module}</h3>
+          <h3>Product: {ticket.product}</h3>
+        </div>
         <div className="ticket-desc">
           <h3>Description of the issue</h3>
           <p>{ticket.description}</p>

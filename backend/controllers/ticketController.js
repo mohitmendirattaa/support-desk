@@ -14,23 +14,51 @@ const getTickets = async (req, res) => {
 };
 
 const createTicket = async (req, res) => {
-  const { product, description } = req.body;
-  if (!description || !product) {
+  const {
+    description,
+    priority,
+    module,
+    startDate,
+    endDate,
+    service,
+    category,
+  } = req.body;
+  if (
+    !description ||
+    !priority ||
+    !module ||
+    !startDate ||
+    !endDate ||
+    !service ||
+    !category
+  ) {
     res.status(400);
-    throw new Error("Please add a product and description");
+    throw new Error("Please add all required fields");
   }
   const user = await User.findById(req.user.id);
   if (!user) {
     res.status(401);
     throw new Error("User not found");
+  }try {
+    const ticket = await Ticket.create({
+      priority,
+      module,
+      description,
+      user: req.user.id,
+      status: "new",
+      startDate,
+      endDate,
+      service,
+      category,
+    });
+    res.status(201).json(ticket);
+  } catch (error) {
+    console.error("Error creating ticket:", error); // Log the error on the server
+    res
+      .status(500)
+      .json({ message: "Failed to create ticket", error: error.message });
   }
-  const ticket = await Ticket.create({
-    product,
-    description,
-    user: req.user.id,
-    status: "new",
-  });
-  res.status(201).json(ticket);
+ 
 };
 
 const getTicket = async (req, res) => {
