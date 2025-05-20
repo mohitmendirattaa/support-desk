@@ -1,7 +1,7 @@
 .ticket-container {
   display: grid;
-  grid-template-columns: 2fr 1fr; /* 2/3 for form, 1/3 for user info */
-  gap: 20px;
+  grid-template-columns: 3fr 1.2fr; 
+  gap: 50px;
   padding: 20px;
   margin-left: 150px;
   margin-right: 150px;
@@ -16,12 +16,16 @@
   background-color: #f0f0f0;
   padding: 20px;
   border-radius: 8px;
+  align-items: center;
+  text-align: center;
+  height: fit-content;
 }
+
 
 .newTicketFormGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* 2 columns for labels and inputs */
-  gap: 15px 20px; /* row-gap, column-gap */
+  grid-template-columns: 1fr 1fr; 
+  gap: 15px 20px; 
 }
 
 .newTicketFormGrid .form-group {
@@ -96,7 +100,7 @@
 .user-info {
   padding: 15px;
   line-height: 1.6;
-  /* text-align: left; */
+  text-align: left;
 }
 
 .user-info p {
@@ -128,4 +132,19 @@
 .btn-block {
   width: 100%;
   margin-top: 20px;
+}
+
+.user-icon {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+  margin: 0 auto 10px;
+  margin-top: 30px;
+  font-size: 60px;
+  color: #000000;
 }

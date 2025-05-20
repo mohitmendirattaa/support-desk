@@ -17,7 +17,7 @@ const createTicket = async (req, res) => {
   const {
     description,
     priority,
-    module,
+    subCategory,
     startDate,
     endDate,
     service,
@@ -26,7 +26,7 @@ const createTicket = async (req, res) => {
   if (
     !description ||
     !priority ||
-    !module ||
+    !subCategory ||
     !startDate ||
     !endDate ||
     !service ||
@@ -42,7 +42,7 @@ const createTicket = async (req, res) => {
   }try {
     const ticket = await Ticket.create({
       priority,
-      module,
+      subCategory,
       description,
       user: req.user.id,
       status: "new",

@@ -6,8 +6,12 @@ import { useNavigate } from "react-router-dom";
 import { createTicket } from "../features/tickets/ticketSlice";
 import BackButton from "../components/BackButton";
 import clsx from "clsx";
+import { FaUser } from "react-icons/fa";
 // import "../NewTicket.css";
 import styles from "./css/NewTicket.module.css";
+
+const sapModules = ["MM", "SD", "FI", "PP", "PM", "PS", "QM", "Other"];
+const digitalPlatforms = ["Platform 1", "Platform 2", "Platform 3"];
 
 function NewTicket() {
   const { user } = useSelector((state) => state.auth);
@@ -15,7 +19,8 @@ function NewTicket() {
   const [email] = useState(user.email);
   const [service, setService] = useState("Incident");
   const [category, setCategory] = useState("Digital");
-  const [module, setModule] = useState("MM");
+  const [subCategory, setSubCategory] = useState("");
+  const [subCategories, setSubCategories] = useState(digitalPlatforms);
   const [priority, setPriority] = useState("High");
   const [startDate, setStartDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -47,11 +52,22 @@ function NewTicket() {
     setEndDate(futureDate.toISOString().split("T")[0]);
   }, [priority, startDate]);
 
+  useEffect(() => {
+    // Update subcategories based on selected category
+    if (category === "SAP") {
+      setSubCategories(sapModules);
+      setSubCategory(sapModules[0]);
+    } else if (category === "Digital") {
+      setSubCategories(digitalPlatforms);
+      setSubCategory(digitalPlatforms[0]);
+    }
+  }, [category]);
+
   const onSubmit = (e) => {
     e.preventDefault();
     dispatch(
       createTicket({
-        module,
+        subCategories,
         description,
         priority,
         startDate,
@@ -121,21 +137,25 @@ function NewTicket() {
               </select>
             </div>
             <div className={clsx(styles["form-group"])}>
-              <label htmlFor="module">Module</label>
+              <label htmlFor="subCategory">
+                {category === "SAP" ? "SAP Module" : "Digital Platform"}
+              </label>
               <select
-                name="module"
-                id="module"
-                value={module}
-                onChange={(e) => setModule(e.target.value)}
+                name="subCategory"
+                id="subCategory"
+                value={subCategory}
+                onChange={(e) => setSubCategory(e.target.value)}
+                disabled={!category}
               >
-                <option value={"MM"}>MM</option>
-                <option value={"SD"}>SD</option>
-                <option value={"FI"}>FI</option>
-                <option value={"PP"}>PP</option>
-                <option value={"PM"}>PM</option>
-                <option value={"PS"}>PS</option>
-                <option value={"QM"}>QM</option>
-                <option value={"Other"}>Other</option>
+                {subCategories.map(
+                  (
+                    sub // Changed from subCategories to sub
+                  ) => (
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
+                  )
+                )}
               </select>
             </div>
             <div className={styles.dateInputGroupGrid}>
@@ -194,9 +214,15 @@ function NewTicket() {
         </div>
         <div className={clsx(styles["ticket-right"])}>
           <div className={clsx(styles["user-header"])}>USER INFORMATION</div>
+          <div className={clsx(styles["user-icon"])}>
+            <FaUser />
+          </div>
           <div className={clsx(styles["user-info"])}>
             <p>
               <strong>NAME:</strong> Mohit Mendiratta
+            </p>
+            <p>
+              <strong>EMP CODE:</strong> 11670018
             </p>
             <p>
               <strong>CONTACT:</strong> 987654321

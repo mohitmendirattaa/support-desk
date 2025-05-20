@@ -36,10 +36,11 @@ const ticketSchema = mongoose.Schema(
       required: [true, "Please select the priority"],
       enum: ["High", "Medium", "Low"],
     },
-    module: {
+    subCategory: {
+      // Renamed from 'module' to 'subCategory'
       type: String,
-      required: [true, "Please select the module"],
-      enum: ["MM", "SD", "FI", "PP", "PM", "PS", "QM", "Other"],
+      required: [true, "Please select the subcategory"],
+      //  NO ENUM HERE -  Will be dynamic
     },
     startDate: {
       type: Date,
@@ -53,6 +54,17 @@ const ticketSchema = mongoose.Schema(
     timestamps: true,
   }
 );
+
+ticketSchema.path("subCategory").validate(function (value) {
+  const validSAPModules = ["MM", "SD", "FI", "PP", "PM", "PS", "QM", "Other"];
+  const validDigitalPlatforms = ["Platform 1", "Platform 2", "Platform 3"]; //  Add your Digital platform names
+  if (this.category === "SAP") {
+    return validSAPModules.includes(value);
+  } else if (this.category === "Digital") {
+    return validDigitalPlatforms.includes(value);
+  }
+  return false; //  Should not happen, but default to invalid
+}, "Invalid subcategory for the selected category.");
 
 const Ticket = mongoose.model("Ticket", ticketSchema);
 

@@ -3,18 +3,32 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) {
+  const { name, email, password, contact, employeeCode, location, company } =
+    req.body;
+  if (
+    !name ||
+    !email ||
+    !password ||
+    !contact ||
+    !employeeCode ||
+    !location ||
+    !company
+  ) {
     res.status(401);
     throw new Error("Please include all fields");
   }
-  const userExist = await User.findOne({
-    email,
-  });
-  if (userExist) {
+  const emailExist = await User.findOne({ email });
+  if (emailExist) {
     res.status(400);
-    throw new Error("User already exist");
+    throw new Error("User with that email already exists.");
   }
+
+  const employeeCodeExist = await User.findOne({ employeeCode });
+  if (employeeCodeExist) {
+    res.status(400);
+    throw new Error("User with that employee code already exists.");
+  }
+
   const salt = await bcrypt.genSalt(10);
   const hash = await bcrypt.hash(password, salt);
 
@@ -22,6 +36,10 @@ const registerUser = async (req, res) => {
     name,
     email,
     password: hash,
+    contact,
+    employeeCode,
+    location,
+    company,
   });
 
   if (user) {
@@ -33,7 +51,7 @@ const registerUser = async (req, res) => {
     });
   } else {
     res.status(400);
-    throw new Error("Invalid user data");
+    throw new Error("User registration failed. Please try again.");
   }
 };
 
