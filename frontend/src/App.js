@@ -11,15 +11,16 @@ import PrivateRoute from "./components/PrivateRoute";
 import Tickets from "./pages/Tickets";
 import UserProfile from "./pages/UserProfile";
 import Ticket from "./pages/Ticket";
+import Footer from "./components/Footer";
 
 function App() {
   return (
-    <>
-      <Router>
-        <div className="container">
-          <Header></Header>
+    <Router>
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<Home></Home>}></Route>
+            <Route path="/" element={<Home />}></Route>
             <Route path="/login" element={<Login />}></Route>
             <Route path="/register" element={<Register />}></Route>
 
@@ -27,7 +28,7 @@ function App() {
               path="/new-ticket"
               element={
                 <PrivateRoute>
-                  <NewTicket></NewTicket>
+                  <NewTicket />
                 </PrivateRoute>
               }
             />
@@ -35,7 +36,7 @@ function App() {
               path="/tickets"
               element={
                 <PrivateRoute>
-                  <Tickets></Tickets>
+                  <Tickets />
                 </PrivateRoute>
               }
             />
@@ -43,12 +44,12 @@ function App() {
               path="/ticket/:ticketId"
               element={
                 <PrivateRoute>
-                  <Ticket></Ticket>
+                  <Ticket />
                 </PrivateRoute>
               }
             />
             <Route
-              path="/user"
+              path="/profile"
               element={
                 <PrivateRoute>
                   <UserProfile />
@@ -56,10 +57,11 @@ function App() {
               }
             />
           </Routes>
-        </div>
-      </Router>
+        </main>
+        <Footer />
+      </div>
       <ToastContainer />
-    </>
+    </Router>
   );
 }
 
