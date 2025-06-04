@@ -1,0 +1,47 @@
+/* src/components/css/Register.module.css */
+
+.customSelect .select-search__control {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 text-base placeholder-gray-400;
+  min-height: auto !important; 
+  box-shadow: none !important; 
+}
+
+.customSelect .select-search__control--is-focused {
+  @apply border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50;
+  box-shadow: none !important; 
+}
+
+.customSelect .select-search__value-container {
+  padding: 0 !important;
+  padding-right: 0.5rem !important; 
+  padding-left: 0.5rem !important;
+}
+
+.customSelect .select-search__placeholder {
+  @apply text-gray-400;
+}
+
+.customSelect .select-search__menu {
+  @apply border border-gray-300 rounded-lg shadow-lg;
+  z-index: 50; /* Ensure dropdown appears above other content */
+}
+
+.customSelect .select-search__option {
+  @apply px-4 py-2 text-gray-800 text-base hover:bg-indigo-100 cursor-pointer;
+}
+
+.customSelect .select-search__option--is-selected {
+  @apply bg-indigo-50 text-indigo-800 font-semibold;
+}
+
+.customSelect .select-search__option--is-focused {
+  @apply bg-indigo-50;
+}
+
+/* Adjust caret and indicators if needed */
+.customSelect .select-search__indicator-separator {
+  @apply bg-transparent; 
+}
+.customSelect .select-search__indicator {
+  @apply text-gray-500; 
+}

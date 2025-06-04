@@ -1,0 +1,76 @@
+.ticket {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+    background: #fff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .ticket div:nth-child(3) {
+    text-align: center; /* Priority */
+  }
+  
+  .ticket div:nth-child(4) {
+    text-align: center; /* Status */
+  }
+  
+  .ticket div:last-child {
+    text-align: right; /* View Button container */
+    display: flex; /* Use flexbox to control alignment within the container */
+    justify-content: flex-end; /* Align button to the right */
+  }
+  
+  .btnReverse {
+    background-color: #f8f9fa;
+    color: #343a40;
+    border: 1px solid #ced4da;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+    text-decoration: none;
+    display: inline-block; /* Make it behave like a block for better sizing */
+  }
+  
+  .btnReverse:hover {
+    background-color: #e2e6ea;
+  }
+  
+  .btnSm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+    border-radius: 0.2rem;
+  }
+  
+  .status {
+    background-color: #333;
+    color: #fff;
+    width: 100px; /* Explicit width for the status */
+    padding: 5px 10px;
+    justify-self: center;
+    border-radius: 10px;
+    font-size: 16px;
+    text-align: center;
+  }
+  
+  .status-new {
+    background-color: green;
+    color: #fff;
+    border-radius: 10px;
+  }
+  
+  .status-open {
+    background-color: steelblue;
+    color: #fff;
+    border-radius: 10px;
+  }
+  
+  .status-closed {
+    background-color: darkred;
+    color: #fff;
+    border-radius: 10px;
+  }

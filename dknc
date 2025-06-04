@@ -1,0 +1,387 @@
+[33mcommit 99263c37767ea9f4abca974c1d62f8e6f356ae37[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mcss-changes[m[33m, [m[1;31morigin/css-changes[m[33m)[m
+Author: Mohitmendiratta1 <mohitmendiratta2018@gmail.com>
+Date:   Tue May 20 18:11:44 2025 +0530
+
+    Regestration
+
+[1mdiff --git a/backend/controllers/ticketController.js b/backend/controllers/ticketController.js[m
+[1mindex 3dc986c..227eff1 100644[m
+[1m--- a/backend/controllers/ticketController.js[m
+[1m+++ b/backend/controllers/ticketController.js[m
+[36m@@ -17,7 +17,7 @@[m [mconst createTicket = async (req, res) => {[m
+   const {[m
+     description,[m
+     priority,[m
+[31m-    module,[m
+[32m+[m[32m    subCategory,[m
+     startDate,[m
+     endDate,[m
+     service,[m
+[36m@@ -26,7 +26,7 @@[m [mconst createTicket = async (req, res) => {[m
+   if ([m
+     !description ||[m
+     !priority ||[m
+[31m-    !module ||[m
+[32m+[m[32m    !subCategory ||[m
+     !startDate ||[m
+     !endDate ||[m
+     !service ||[m
+[36m@@ -42,7 +42,7 @@[m [mconst createTicket = async (req, res) => {[m
+   }try {[m
+     const ticket = await Ticket.create({[m
+       priority,[m
+[31m-      module,[m
+[32m+[m[32m      subCategory,[m
+       description,[m
+       user: req.user.id,[m
+       status: "new",[m
+[1mdiff --git a/backend/controllers/userController.js b/backend/controllers/userController.js[m
+[1mindex 2745fb6..12c0448 100644[m
+[1m--- a/backend/controllers/userController.js[m
+[1m+++ b/backend/controllers/userController.js[m
+[36m@@ -3,18 +3,32 @@[m [mconst bcrypt = require("bcryptjs");[m
+ const jwt = require("jsonwebtoken");[m
+ [m
+ const registerUser = async (req, res) => {[m
+[31m-  const { name, email, password } = req.body;[m
+[31m-  if (!name || !email || !password) {[m
+[32m+[m[32m  const { name, email, password, contact, employeeCode, location, company } =[m
+[32m+[m[32m    req.body;[m
+[32m+[m[32m  if ([m
+[32m+[m[32m    !name ||[m
+[32m+[m[32m    !email ||[m
+[32m+[m[32m    !password ||[m
+[32m+[m[32m    !contact ||[m
+[32m+[m[32m    !employeeCode ||[m
+[32m+[m[32m    !location ||[m
+[32m+[m[32m    !company[m
+[32m+[m[32m  ) {[m
+     res.status(401);[m
+     throw new Error("Please include all fields");[m
+   }[m
+[31m-  const userExist = await User.findOne({[m
+[31m-    email,[m
+[31m-  });[m
+[31m-  if (userExist) {[m
+[32m+[m[32m  const emailExist = await User.findOne({ email });[m
+[32m+[m[32m  if (emailExist) {[m
+[32m+[m[32m    res.status(400);[m
+[32m+[m[32m    throw new Error("User with that email already exists.");[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  const employeeCodeExist = await User.findOne({ employeeCode });[m
+[32m+[m[32m  if (employeeCodeExist) {[m
+     res.status(400);[m
+[31m-    throw new Error("User already exist");[m
+[32m+[m[32m    throw new Error("User with that employee code already exists.");[m
+   }[m
+[32m+[m
+   const salt = await bcrypt.genSalt(10);[m
+   const hash = await bcrypt.hash(password, salt);[m
+ [m
+[36m@@ -22,6 +36,10 @@[m [mconst registerUser = async (req, res) => {[m
+     name,[m
+     email,[m
+     password: hash,[m
+[32m+[m[32m    contact,[m
+[32m+[m[32m    employeeCode,[m
+[32m+[m[32m    location,[m
+[32m+[m[32m    company,[m
+   });[m
+ [m
+   if (user) {[m
+[36m@@ -33,7 +51,7 @@[m [mconst registerUser = async (req, res) => {[m
+     });[m
+   } else {[m
+     res.status(400);[m
+[31m-    throw new Error("Invalid user data");[m
+[32m+[m[32m    throw new Error("User registration failed. Please try again.");[m
+   }[m
+ };[m
+ [m
+[1mdiff --git a/backend/models/ticketModel.js b/backend/models/ticketModel.js[m
+[1mindex 0bda6a1..75d7827 100644[m
+[1m--- a/backend/models/ticketModel.js[m
+[1m+++ b/backend/models/ticketModel.js[m
+[36m@@ -36,10 +36,11 @@[m [mconst ticketSchema = mongoose.Schema([m
+       required: [true, "Please select the priority"],[m
+       enum: ["High", "Medium", "Low"],[m
+     },[m
+[31m-    module: {[m
+[32m+[m[32m    subCategory: {[m
+[32m+[m[32m      // Renamed from 'module' to 'subCategory'[m
+       type: String,[m
+[31m-      required: [true, "Please select the module"],[m
+[31m-      enum: ["MM", "SD", "FI", "PP", "PM", "PS", "QM", "Other"],[m
+[32m+[m[32m      required: [true, "Please select the subcategory"],[m
+[32m+[m[32m      //  NO ENUM HERE -  Will be dynamic[m
+     },[m
+     startDate: {[m
+       type: Date,[m
+[36m@@ -54,6 +55,17 @@[m [mconst ticketSchema = mongoose.Schema([m
+   }[m
+ );[m
+ [m
+[32m+[m[32mticketSchema.path("subCategory").validate(function (value) {[m
+[32m+[m[32m  const validSAPModules = ["MM", "SD", "FI", "PP", "PM", "PS", "QM", "Other"];[m
+[32m+[m[32m  const validDigitalPlatforms = ["Platform 1", "Platform 2", "Platform 3"]; //  Add your Digital platform names[m
+[32m+[m[32m  if (this.category === "SAP") {[m
+[32m+[m[32m    return validSAPModules.includes(value);[m
+[32m+[m[32m  } else if (this.category === "Digital") {[m
+[32m+[m[32m    return validDigitalPlatforms.includes(value);[m
+[32m+[m[32m  }[m
+[32m+[m[32m  return false; //  Should not happen, but default to invalid[m
+[32m+[m[32m}, "Invalid subcategory for the selected category.");[m
+[32m+[m
+ const Ticket = mongoose.model("Ticket", ticketSchema);[m
+ [m
+ module.exports = Ticket;[m
+[1mdiff --git a/backend/models/userModel.js b/backend/models/userModel.js[m
+[1mindex 6280270..fdd8a64 100644[m
+[1m--- a/backend/models/userModel.js[m
+[1m+++ b/backend/models/userModel.js[m
+[36m@@ -6,11 +6,27 @@[m [mconst userSchema = mongoose.Schema([m
+       type: String,[m
+       required: [true, "please add a name"],[m
+     },[m
+[32m+[m[32m    employeeCode: {[m
+[32m+[m[32m      type: Number,[m
+[32m+[m[32m      required: [true, "please add your employee code"],[m
+[32m+[m[32m    },[m
+[32m+[m[32m    contact: {[m
+[32m+[m[32m      type: String,[m
+[32m+[m[32m      required: [true, "please add a contact"],[m
+[32m+[m[32m    },[m
+     email: {[m
+       type: String,[m
+       required: [true, "please add a email"],[m
+       unique: true,[m
+     },[m
+[32m+[m[32m    location: {[m
+[32m+[m[32m      type: String,[m
+[32m+[m[32m      required: [true, "please add a location"],[m
+[32m+[m[32m    },[m
+[32m+[m[32m    company: {[m
+[32m+[m[32m      type: String,[m
+[32m+[m[32m      required: [true, "please add a company"],[m
+[32m+[m[32m    },[m
+     password: {[m
+       type: String,[m
+       required: [true, "please add a password"],[m
+[1mdiff --git a/frontend/src/constrants/formOptions.js b/frontend/src/constrants/formOptions.js[m
+[1mnew file mode 100644[m
+[1mindex 0000000..c56a112[m
+[1m--- /dev/null[m
+[1m+++ b/frontend/src/constrants/formOptions.js[m
+[36m@@ -0,0 +1,240 @@[m
+[32m+[m[32mexport const COUNTRY_CODE_SELECT_OPTIONS = [[m
+[32m+[m[32m  // Top options, often displayed separately for quick access[m
+[32m+[m[32m  { value: "44", label: "UK (+44)", countryCode: "GB", selected: true },[m[41m [m
+[32m+[m[32m  { value: "1", label: "USA (+1)", countryCode: "US" },[m
+[32m+[m[32m  { value: "91", label: "India (+91)", countryCode: "IN" },[m[41m [m
+[32m+[m
+[32m+[m[32m  {[m
+[32m+[m[32m    group: "Other countries",[m
+[32m+[m[32m    options: [[m
+[32m+[m[32m      { value: "213", label: "Algeria (+213)", countryCode: "DZ" },[m
+[32m+[m[32m      { value: "376", label: "Andorra (+376)", countryCode: "AD" },[m
+[32m+[m[32m      { value: "244", label: "Angola (+244)", countryCode: "AO" },[m
+[32m+[m[32m      { value: "1264", label: "Anguilla (+1264)", countryCode: "AI" },[m
+[32m+[m[32m      { value: "1268", label: "Antigua & Barbuda (+1268)", countryCode: "AG" },[m
+[32m+[m[32m      { value: "54", label: "Argentina (+54)", countryCode: "AR" },[m
+[32m+[m[32m      { value: "374", label: "Armenia (+374)", countryCode: "AM" },[m
+[32m+[m[32m      { value: "297", label: "Aruba (+297)", countryCode: "AW" },[m
+[32m+[m[32m      { value: "61", label: "Australia (+61)", countryCode: "AU" },[m
+[32m+[m[32m      { value: "43", label: "Austria (+43)", countryCode: "AT" },[m
+[32m+[m[32m      { value: "994", label: "Azerbaijan (+994)", countryCode: "AZ" },[m
+[32m+[m[32m      { value: "1242", label: "Bahamas (+1242)", countryCode: "BS" },[m
+[32m+[m[32m      { value: "973", label: "Bahrain (+973)", countryCode: "BH" },[m
+[32m+[m[32m      { value: "880", label: "Bangladesh (+880)", countryCode: "BD" },[m
+[32m+[m[32m      { value: "1246", label: "Barbados (+1246)", countryCode: "BB" },[m
+[32m+[m[32m      { value: "375", label: "Belarus (+375)", countryCode: "BY" },[m
+[32m+[m[32m      { value: "32", label: "Belgium (+32)", countryCode: "BE" },[m
+[32m+[m[32m      { value: "501", label: "Belize (+501)", countryCode: "BZ" },[m
+[32m+[m[32m      { value: "229", label: "Benin (+229)", countryCode: "BJ" },[m
+[32m+[m[32m      { value: "1441", label: "Bermuda (+1441)", countryCode: "BM" },[m
+[32m+[m[32m      { value: "975", label: "Bhutan (+975)", countryCode: "BT" },[m
+[32m+[m[32m      { value: "591", label: "Bolivia (+591)", countryCode: "BO" },[m
+[32m+[m[32m      { value: "387", label: "Bosnia Herzegovina (+387)", countryCode: "BA" },[m
+[32m+[m[32m      { value: "267", label: "Botswana (+267)", countryCode: "BW" },[m
+[32m+[m[32m      { value: "55", label: "Brazil (+55)", countryCode: "BR" },[m
+[32m+[m[32m      { value: "673", label: "Brunei (+673)", countryCode: "BN" },[m
+[32m+[m[32m      { value: "359", label: "Bulgaria (+359)", countryCode: "BG" },[m
+[32m+[m[32m      { value: "226", label: "Burkina Faso (+226)", countryCode: "BF" },[m
+[32m+[m[32m      { value: "257", label: "Burundi (+257)", countryCode: "BI" },[m
+[32m+[m[32m      { value: "855", label: "Cambodia (+855)", countryCode: "KH" },[m
+[32m+[m[32m      { value: "237", label: "Cameroon (+237)", countryCode: "CM" },[m
+[32m+[m[32m      { value: "1", label: "Canada (+1)", countryCode: "CA" }, // Canada also uses +1[m
+[32m+[m[32m      { value: "238", label: "Cape Verde Islands (+238)", countryCode: "CV" },[m
+[32m+[m[32m      { value: "1345", label: "Cayman Islands (+1345)", countryCode: "KY" },[m
+[32m+[m[32m      {[m
+[32m+[m[32m        value: "236",[m
+[32m+[m[32m        label: "Central African Republic (+236)",[m
+[32m+[m[32m        countryCode: "CF",[m
+[32m+[m[32m      },[m
+[32m+[m[32m      { value: "56", label: "Chile (+56)", countryCode: "CL" },[m
+[32m+[m[32m      { value: "86", label: "China (+86)", countryCode: "CN" },[m
+[32m+[m[32m      { value: "57", label: "Colombia (+57)", countryCode: "CO" },[m
+[32m+[m[32m      { value: "269", label: "Comoros (+269)", countryCode: "KM" },[m
+[32m+[m[32m      { value: "242", label: "Congo (+242)", countryCode: "CG" },[m
+[32m+[m[32m      { value: "682", label: "Cook Islands (+682)", countryCode: "CK" },[m
+[32m+[m[32m      { value: "506", label: "Costa Rica (+506)", countryCode: "CR" },[m
+[32m+[m[32m      { value: "385", label: "Croatia (+385)", countryCode: "HR" },[m
+[32m+[m[32m      { value: "53", label: "Cuba (+53)", countryCode: "CU" },[m
+[32m+[m[32m      { value: "90392", label: "Cyprus North (+90392)", countryCode: "CY" }, // Note: You might want to consolidate Cyprus[m
+[32m+[m[32m      { value: "357", label: "Cyprus South (+357)", countryCode: "CY" },[m
+[32m+[m[32m      { value: "42", label: "Czech Republic (+42)", countryCode: "CZ" },[m
+[32m+[m[32m      { value: "45", label: "Denmark (+45)", countryCode: "DK" },[m
+[32m+[m[32m      { value: "253", label: "Djibouti (+253)", countryCode: "DJ" },[m
+[32m+[m[32m      { value: "1809", label: "Dominica (+1809)", countryCode: "DM" },[m
+[32m+[m[32m      { value: "1809", label: "Dominican Republic (+1809)", countryCode: "DO" },[m
+[32m+[m[32m      { value: "593", label: "Ecuador (+593)", countryCode: "EC" },[m
+[32m+[m[32m      { value: "20", label: "Egypt (+20)", countryCode: "EG" },[m
+[32m+[m[32m      { value: "503", label: "El Salvador (+503)", countryCode: "SV" },[m
+[32m+[m[32m      { value: "240", label: "Equatorial Guinea (+240)", countryCode: "GQ" },[m
+[32m+[m[32m      { value: "291", label: "Eritrea (+291)", countryCode: "ER" },[m
+[32m+[m[32m      { value: "372", label: "Estonia (+372)", countryCode: "EE" },[m
+[32m+[m[32m      { value: "251", label: "Ethiopia (+251)", countryCode: "ET" },[m
+[32m+[m[32m      { value: "500", label: "Falkland Islands (+500)", countryCode: "FK" },[m
+[32m+[m[32m      { value: "298", label: "Faroe Islands (+298)", countryCode: "FO" },[m
+[32m+[m[32m      { value: "679", label: "Fiji (+679)", countryCode: "FJ" },[m
+[32m+[m[32m      { value: "358", label: "Finland (+358)", countryCode: "FI" },[m
+[32m+[m[32m      { value: "33", label: "France (+33)", countryCode: "FR" },[m
+[32m+[m[32m      { value: "594", label: "French Guiana (+594)", countryCode: "GF" },[m
+[32m+[m[32m      { value: "689", label: "French Polynesia (+689)", countryCode: "PF" },[m
+[32m+[m[32m      { value: "241", label: "Gabon (+241)", countryCode: "GA" },[m
+[32m+[m[32m      { value: "220", label: "Gambia (+220)", countryCode: "GM" },[m
+[32m+[m[32m      { value: "7880", label: "Georgia (+7880)", countryCode: "GE" },[m
+[32m+[m[32m      { value: "49", label: "Germany (+49)", countryCode: "DE" },[m
+[32m+[m[32m      { value: "233", label: "Ghana (+233)", countryCode: "GH" },[m
+[32m+[m[32m      { value: "350", label: "Gibraltar (+350)", countryCode: "GI" },[m
+[32m+[m[32m      { value: "30", label: "Greece (+30)", countryCode: "GR" },[m
+[32m+[m[32m      { value: "299", label: "Greenland (+299)", countryCode: "GL" },[m
+[32m+[m[32m      { value: "1473", label: "Grenada (+1473)", countryCode: "GD" },[m
+[32m+[m[32m      { value: "590", label: "Guadeloupe (+590)", countryCode: "GP" },[m
+[32m+[m[32m      { value: "671", label: "Guam (+671)", countryCode: "GU" },[m
+[32m+[m[32m      { value: "502", label: "Guatemala (+502)", countryCode: "GT" },[m
+[32m+[m[32m      { value: "224", label: "Guinea (+224)", countryCode: "GN" },[m
+[32m+[m[32m      { value: "245", label: "Guinea - Bissau (+245)", countryCode: "GW" },[m
+[32m+[m[32m      { value: "592", label: "Guyana (+592)", countryCode: "GY" },[m
+[32m+[m[32m      { value: "509", label: "Haiti (+509)", countryCode: "HT" },[m
+[32m+[m[32m      { value: "504", label: "Honduras (+504)", countryCode: "HN" },[m
+[32m+[m[32m      { value: "852", label: "Hong Kong (+852)", countryCode: "HK" },[m
+[32m+[m[32m      { value: "36", label: "Hungary (+36)", countryCode: "HU" },[m
+[32m+[m[32m      { value: "354", label: "Iceland (+354)", countryCode: "IS" },[m
+[32m+[m[32m      // { value: "91", label: "India (+91)", countryCode: "IN" }, // Moved to top[m
+[32m+[m[32m      { value: "62", label: "Indonesia (+62)", countryCode: "ID" },[m
+[32m+[m[32m      { value: "98", label: "Iran (+98)", countryCode: "IR" },[m
+[32m+[m[32m      { value: "964", label: "Iraq (+964)", countryCode: "IQ" },[m
+[32m+[m[32m      { value: "353", label: "Ireland (+353)", countryCode: "IE" },[m
+[32m+[m[32m      { value: "972", label: "Israel (+972)", countryCode: "IL" },[m
+[32m+[m[32m      { value: "39", label: "Italy (+39)", countryCode: "IT" },[m
+[32m+[m[32m      { value: "1876", label: "Jamaica (+1876)", countryCode: "JM" },[m
+[32m+[m[32m      { value: "81", label: "Japan (+81)", countryCode: "JP" },[m
+[32m+[m[32m      { value: "962", label: "Jordan (+962)", countryCode: "JO" },[m
+[32m+[m[32m      { value: "7", label: "Kazakhstan (+7)", countryCode: "KZ" },[m
+[32m+[m[32m      { value: "254", label: "Kenya (+254)", countryCode: "KE" },[m
+[32m+[m[32m      { value: "686", label: "Kiribati (+686)", countryCode: "KI" },[m
+[32m+[m[32m      { value: "850", label: "Korea North (+850)", countryCode: "KP" },[m
+[32m+[m[32m      { value: "82", label: "Korea South (+82)", countryCode: "KR" },[m
+[32m+[m[32m      { value: "965", label: "Kuwait (+965)", countryCode: "KW" },[m
+[32m+[m[32m      { value: "996", label: "Kyrgyzstan (+996)", countryCode: "KG" },[m
+[32m+[m[32m      { value: "856", label: "Laos (+856)", countryCode: "LA" },[m
+[32m+[m[32m      { value: "371", label: "Latvia (+371)", countryCode: "LV" },[m
+[32m+[m[32m      { value: "961", label: "Lebanon (+961)", countryCode: "LB" },[m
+[32m+[m[32m      { value: "266", label: "Lesotho (+266)", countryCode: "LS" },[m
+[32m+[m[32m      { value: "231", label: "Liberia (+231)", countryCode: "LR" },[m
+[32m+[m[32m      { value: "218", label: "Libya (+218)", countryCode: "LY" },[m
+[32m+[m[32m      { value: "417", label: "Liechtenstein (+417)", countryCode: "LI" },[m
+[32m+[m[32m      { value: "370", label: "Lithuania (+370)", countryCode: "LT" },[m
+[32m+[m[32m      { value: "352", label: "Luxembourg (+352)", countryCode: "LU" },[m
+[32m+[m[32m      { value: "853", label: "Macao (+853)", countryCode: "MO" },[m
+[32m+[m[32m      { value: "389", label: "Macedonia (+389)", countryCode: "MK" },[m
+[32m+[m[32m      { value: "261", label: "Madagascar (+261)", countryCode: "MG" },[m
+[32m+[m[32m      { value: "265", label: "Malawi (+265)", countryCode: "MW" },[m
+[32m+[m[32m      { value: "60", label: "Malaysia (+60)", countryCode: "MY" },[m
+[32m+[m[32m      { value: "960", label: "Maldives (+960)", countryCode: "MV" },[m
+[32m+[m[32m      { value: "223", label: "Mali (+223)", countryCode: "ML" },[m
+[32m+[m[32m      { value: "356", label: "Malta (+356)", countryCode: "MT" },[m
+[32m+[m[32m      { value: "692", label: "Marshall Islands (+692)", countryCode: "MH" },[m
+[32m+[m[32m      { value: "596", label: "Martinique (+596)", countryCode: "MQ" },[m
+[32m+[m[32m      { value: "222", label: "Mauritania (+222)", countryCode: "MR" },[m
+[32m+[m[32m      { value: "269", label: "Mayotte (+269)", countryCode: "YT" },[m
+[32m+[m[32m      { value: "52", label: "Mexico (+52)", countryCode: "MX" },[m
+[32m+[m[32m      { value: "691", label: "Micronesia (+691)", countryCode: "FM" },[m
+[32m+[m[32m      { value: "373", label: "Moldova (+373)", countryCode: "MD" },[m
+[32m+[m[32m      { value: "377", label: "Monaco (+377)", countryCode: "MC" },[m
+[32m+[m[32m      { value: "976", label: "Mongolia (+976)", countryCode: "MN" },[m
+[32m+[m[32m      { value: "1664", label: "Montserrat (+1664)", countryCode: "MS" },[m
+[32m+[m[32m      { value: "212", label: "Morocco (+212)", countryCode: "MA" },[m
+[32m+[m[32m      { value: "258", label: "Mozambique (+258)", countryCode: "MZ" },[m
+[32m+[m[32m      { value: "95", label: "Myanmar (+95)", countryCode: "MM" }, // Changed from MN to MM[m
+[32m+[m[32m      { value: "264", label: "Namibia (+264)", countryCode: "NA" },[m
+[32m+[m[32m      { value: "674", label: "Nauru (+674)", countryCode: "NR" },[m
+[32m+[m[32m      { value: "977", label: "Nepal (+977)", countryCode: "NP" },[m
+[32m+[m[32m      { value: "31", label: "Netherlands (+31)", countryCode: "NL" },[m
+[32m+[m[32m      { value: "687", label: "New Caledonia (+687)", countryCode: "NC" },[m
+[32m+[m[32m      { value: "64", label: "New Zealand (+64)", countryCode: "NZ" },[m
+[32m+[m[32m      { value: "505", label: "Nicaragua (+505)", countryCode: "NI" },[m
+[32m+[m[32m      { value: "227", label: "Niger (+227)", countryCode: "NE" },[m
+[32m+[m[32m      { value: "234", label: "Nigeria (+234)", countryCode: "NG" },[m
+[32m+[m[32m      { value: "683", label: "Niue (+683)", countryCode: "NU" },[m
+[32m+[m[32m      { value: "672", label: "Norfolk Islands (+672)", countryCode: "NF" },[m
+[32m+[m[32m      { value: "670", label: "Northern Marianas (+670)", countryCode: "MP" }, // Changed from NP to MP[m
+[32m+[m[32m      { value: "47", label: "Norway (+47)", countryCode: "NO" },[m
+[32m+[m[32m      { value: "968", label: "Oman (+968)", countryCode: "OM" },[m
+[32m+[m[32m      { value: "680", label: "Palau (+680)", countryCode: "PW" },[m
+[32m+[m[32m      { value: "507", label: "Panama (+507)", countryCode: "PA" },[m
+[32m+[m[32m      { value: "675", label: "Papua New Guinea (+675)", countryCode: "PG" },[m
+[32m+[m[32m      { value: "595", label: "Paraguay (+595)", countryCode: "PY" },[m
+[32m+[m[32m      { value: "51", label: "Peru (+51)", countryCode: "PE" },[m
+[32m+[m[32m      { value: "63", label: "Philippines (+63)", countryCode: "PH" },[m
+[32m+[m[32m      { value: "48", label: "Poland (+48)", countryCode: "PL" },[m
+[32m+[m[32m      { value: "351", label: "Portugal (+351)", countryCode: "PT" },[m
+[32m+[m[32m      { value: "1787", label: "Puerto Rico (+1787)", countryCode: "PR" },[m
+[32m+[m[32m      { value: "974", label: "Qatar (+974)", countryCode: "QA" },[m
+[32m+[m[32m      { value: "262", label: "Reunion (+262)", countryCode: "RE" },[m
+[32m+[m[32m      { value: "40", label: "Romania (+40)", countryCode: "RO" },[m
+[32m+[m[32m      { value: "7", label: "Russia (+7)", countryCode: "RU" },[m
+[32m+[m[32m      { value: "250", label: "Rwanda (+250)", countryCode: "RW" },[m
+[32m+[m[32m      { value: "378", label: "San Marino (+378)", countryCode: "SM" },[m
+[32m+[m[32m      { value: "239", label: "Sao Tome & Principe (+239)", countryCode: "ST" },[m
+[32m+[m[32m      { value: "966", label: "Saudi Arabia (+966)", countryCode: "SA" },[m
+[32m+[m[32m      { value: "221", label: "Senegal (+221)", countryCode: "SN" },[m
+[32m+[m[32m      { value: "381", label: "Serbia (+381)", countryCode: "RS" }, // Changed from CS to RS[m
+[32m+[m[32m      { value: "248", label: "Seychelles (+248)", countryCode: "SC" },[m
+[32m+[m[32m      { value: "232", label: "Sierra Leone (+232)", countryCode: "SL" },[m
+[32m+[m[32m      { value: "65", label: "Singapore (+65)", countryCode: "SG" },[m
+[32m+[m[32m      { value: "421", label: "Slovak Republic (+421)", countryCode: "SK" },[m
+[32m+[m[32m      { value: "386", label: "Slovenia (+386)", countryCode: "SI" },[m
+[32m+[m[32m      { value: "677", label: "Solomon Islands (+677)", countryCode: "SB" },[m
+[32m+[m[32m      { value: "252", label: "Somalia (+252)", countryCode: "SO" },[m
+[32m+[m[32m      { value: "27", label: "South Africa (+27)", countryCode: "ZA" },[m
+[32m+[m[32m      { value: "34", label: "Spain (+34)", countryCode: "ES" },[m
+[32m+[m[32m      { value: "94", label: "Sri Lanka (+94)", countryCode: "LK" },[m
+[32m+[m[32m      { value: "290", label: "St. Helena (+290)", countryCode: "SH" },[m
+[32m+[m[32m      { value: "1869", label: "St. Kitts (+1869)", countryCode: "KN" },[m
+[32m+[m[32m      { value: "1758", label: "St. Lucia (+1758)", countryCode: "LC" },[m
+[32m+[m[32m      { value: "249", label: "Sudan (+249)", countryCode: "SD" },[m
+[32m+[m[32m      { value: "597", label: "Suriname (+597)", countryCode: "SR" },[m
+[32m+[m[32m      { value: "268", label: "Swaziland (+268)", countryCode: "SZ" },[m
+[32m+[m[32m      { value: "46", label: "Sweden (+46)", countryCode: "SE" },[m
+[32m+[m[32m      { value: "41", label: "Switzerland (+41)", countryCode: "CH" },[m
+[32m+[m[32m      { value: "963", label: "Syria (+963)", countryCode: "SY" },[m
+[32m+[m[32m      { value: "886", label: "Taiwan (+886)", countryCode: "TW" },[m
+[32m+[m[32m      { value: "7", label: "Tajikstan (+7)", countryCode: "TJ" }, // Russia also uses +7[m
+[32m+[m[32m      { value: "66", label: "Thailand (+66)", countryCode: "TH" },[m
+[32m+[m[32m      { value: "228", label: "Togo (+228)", countryCode: "TG" },[m
+[32m+[m[32m      { value: "676", label: "Tonga (+676)", countryCode: "TO" },[m
+[32m+[m[32m      { value: "1868", label: "Trinidad & Tobago (+1868)", countryCode: "TT" },[m
+[32m+[m[32m      { value: "216", label: "Tunisia (+216)", countryCode: "TN" },[m
+[32m+[m[32m      { value: "90", label: "Turkey (+90)", countryCode: "TR" },[m
+[32m+[m[32m      { value: "7", label: "Turkmenistan (+7)", countryCode: "TM" }, // Russia also uses +7[m
+[32m+[m[32m      { value: "993", label: "Turkmenistan (+993)", countryCode: "TM" }, // Duplicate, check source[m
+[32m+[m[32m      {[m
+[32m+[m[32m        value: "1649",[m
+[32m+[m[32m        label: "Turks & Caicos Islands (+1649)",[m
+[32m+[m[32m     
