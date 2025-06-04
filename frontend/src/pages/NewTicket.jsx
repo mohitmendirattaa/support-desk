@@ -106,12 +106,9 @@ function NewTicket() {
   return (
     <>
       <BackButton />
-      {/* Main Container - Centered and Spaced */}
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 mt-8 mb-8">
         <div className="flex flex-col lg:flex-row gap-8 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100">
-          {/* Left Section: Ticket Form */}
           <div className="flex-1 p-6 lg:p-10">
-            {/* Header for Ticket Information */}
             <div className="bg-blue-600 text-white font-bold text-lg py-3 px-6 rounded-t-lg -mx-6 lg:-mx-10 -mt-6 lg:-mt-10 mb-6 text-center shadow-md">
               CREATE NEW TICKET
             </div>

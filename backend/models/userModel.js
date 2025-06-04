@@ -16,7 +16,7 @@ const userSchema = mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, "please add a email"],
+      required: [true, "please add an email"], // Corrected "a email" to "an email"
       unique: true,
     },
     location: {
@@ -30,6 +30,16 @@ const userSchema = mongoose.Schema(
     password: {
       type: String,
       required: [true, "please add a password"],
+    },
+    role: {
+      type: String,
+      enum: ["user", "admin"], // Defines allowed values for 'role'
+      default: "user", // Sets 'user' as the default role
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive"], 
+      default: "inactive", 
     },
   },
   {

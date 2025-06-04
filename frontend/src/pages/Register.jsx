@@ -43,23 +43,26 @@ function Register() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { user, isError, isLoading, isSuccess, message } = useSelector(
+  const { isError, isLoading, isSuccess, message } = useSelector(
     (state) => state.auth
   );
 
   useEffect(() => {
     if (isError) {
       toast.error(message || "Registration failed. Please try again.");
-      dispatch(reset()); // Reset on error too
+      dispatch(reset()); // Reset on error
     }
 
+    // Check if registration was successful
     if (isSuccess) {
-      // Only check for isSuccess specifically here
-      toast.success("Registration successful!");
-      navigate("/");
-      dispatch(reset()); 
+      // Display a success message indicating account is awaiting approval
+      toast.success("Registration successful! Your account is awaiting admin approval.");
+      // Redirect to the login page
+      navigate("/login");
+      // Reset the auth state to clear any user data from the registration attempt
+      dispatch(reset());
     }
-  }, [user, isError, isSuccess, message, navigate, dispatch]); 
+  }, [isSuccess, isError, message, navigate, dispatch]); // Removed 'user' from dependencies as it's not directly used for redirection here
 
   useEffect(() => {
     setAllCountries(Country.getAllCountries());
@@ -274,7 +277,6 @@ function Register() {
                   value={actualPhoneCode}
                   onChange={(e) => setActualPhoneCode(e.target.value)}
                 >
-                  {/* Filter to only show countries with a phonecode */}
                   {allCountries
                     .filter((c) => c.phonecode)
                     .map((country) => (
@@ -447,11 +449,11 @@ function Register() {
             <button
               type="submit"
               className="w-full flex items-center justify-center px-6 py-4
-                         bg-gradient-to-r from-indigo-600 to-purple-700 text-white
-                         font-semibold text-lg rounded-xl shadow-lg
-                         hover:from-indigo-700 hover:to-purple-800
-                         transform hover:-translate-y-1 transition duration-300 ease-in-out
-                         focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50"
+                                 bg-gradient-to-r from-indigo-600 to-purple-700 text-white
+                                 font-semibold text-lg rounded-xl shadow-lg
+                                 hover:from-indigo-700 hover:to-purple-800
+                                 transform hover:-translate-y-1 transition duration-300 ease-in-out
+                                 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50"
               disabled={isLoading}
             >
               {isLoading ? (
