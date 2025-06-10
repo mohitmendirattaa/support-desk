@@ -7,6 +7,7 @@ const PORT = process.env.PORT || 5000;
 const errorHandler = require("./middleware/errorMiddleware");
 const connectDb = require("./config/db");
 const ticketRouter = require("./routes/ticketRoutes");
+const analyticRoutes = require("./routes/analyticRoutes"); // NEW: Import analytic routes
 
 connectDb();
 
@@ -24,12 +25,13 @@ app.use(
     extended: false,
   })
 );
-app.use("/api/users", userRouter);
 
+app.use("/api/users", userRouter);
 app.use("/api/tickets", ticketRouter);
+app.use("/api/analytics", analyticRoutes); // NEW: Mount analytic routes
 
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log("server is running");
+  console.log(`Server is running on port ${PORT}`);
 });

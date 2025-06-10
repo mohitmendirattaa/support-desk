@@ -1,8 +1,9 @@
-// UserItem.jsx
+// components/UserItem.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { updateUserStatus } from "../features/users/userSlice"; // Corrected import path
+import { updateUserStatus } from "../features/users/userSlice";
+import { toast } from "react-toastify";
 
 function UserItem({ userData }) {
   const dispatch = useDispatch();
@@ -20,17 +21,32 @@ function UserItem({ userData }) {
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    try {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (e) {
+      console.error("UserItem: Error formatting date:", e);
+      return "Invalid Date";
+    }
   };
 
-  // In UserItem.jsx, inside handleStatusToggle
   const handleStatusToggle = () => {
     const newStatus = userData.status === "active" ? "inactive" : "active";
-    dispatch(updateUserStatus({ id: userData._id, status: newStatus }));
+
+    // Change from userData._id to userData.id
+    if (userData.id) {
+      // Check for userData.id
+      dispatch(updateUserStatus({ id: userData.id, status: newStatus })); // Pass userData.id
+    } else {
+      console.error(
+        "UserItem: Cannot update status - userData.id is missing or invalid for userData:",
+        userData
+      );
+      toast.error("Unable to update user status: User ID not found.");
+    }
   };
 
   return (
@@ -38,7 +54,14 @@ function UserItem({ userData }) {
       {/* Name column */}
       <div className="text-gray-900 font-medium md:col-span-1">
         <Link
-          to={`/admin-dashboard/users/${userData._id}`}
+          // Change from userData._id to userData.id
+          onClick={() =>
+            console.log(
+              "UserItem: Navigating to user details for ID:",
+              userData.id
+            )
+          }
+          to={`/admin-dashboard/users/${userData.id}`} // Change to userData.id
           className="text-blue-600 hover:text-blue-800 hover:underline"
         >
           {userData.name}
@@ -80,8 +103,15 @@ function UserItem({ userData }) {
       {/* View Details Button column */}
       <div className="flex justify-end md:justify-start md:col-span-1">
         <Link
+          // Change from userData._id to userData.id
+          onClick={() =>
+            console.log(
+              "UserItem: Navigating to user details from button for ID:",
+              userData.id
+            )
+          }
           className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors text-sm font-semibold whitespace-nowrap"
-          to={`/admin-dashboard/users/${userData._id}`}
+          to={`/admin-dashboard/users/${userData.id}`} // Change to userData.id
         >
           View Details
         </Link>

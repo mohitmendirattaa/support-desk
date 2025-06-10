@@ -8,7 +8,6 @@ const createTicket = async (ticketData, token) => {
       Authorization: `Bearer ${token}`,
     },
   });
-
   return res.data;
 };
 
@@ -18,7 +17,6 @@ const getTickets = async (token) => {
       Authorization: `Bearer ${token}`,
     },
   });
-
   return res.data;
 };
 
@@ -28,9 +26,9 @@ const getTicket = async (ticketId, token) => {
       Authorization: `Bearer ${token}`,
     },
   });
-
   return res.data;
 };
+
 const closeTicket = async (ticketId, token) => {
   const res = await axios.put(
     API_URL + ticketId,
@@ -41,7 +39,24 @@ const closeTicket = async (ticketId, token) => {
       },
     }
   );
+  return res.data;
+};
 
+const getAllTicketsForAdmin = async (token) => {
+  const res = await axios.get(API_URL + "admin/allTickets", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+};
+
+const getSingleTicketAsAdmin = async (ticketId, token) => {
+  const res = await axios.get(API_URL + "admin/" + ticketId, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return res.data;
 };
 
@@ -50,6 +65,8 @@ const ticketService = {
   getTickets,
   getTicket,
   closeTicket,
+  getAllTicketsForAdmin,
+  getSingleTicketAsAdmin,
 };
 
 export default ticketService;

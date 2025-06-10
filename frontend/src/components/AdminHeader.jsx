@@ -5,7 +5,8 @@ import {
   FaTicketAlt,
   FaChartBar,
   FaCog,
-} from "react-icons/fa"; // Removed FaUserShield
+  FaUserPlus, // Import FaUserPlus for the Register/Add User icon
+} from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout, reset } from "../features/auth/authSlice";
@@ -67,7 +68,7 @@ function AdminHeader() {
                 </Link>
               </li>
               <li>
-                {/* Example: Link to a user management section */}
+                {/* Link to a user management section */}
                 <Link
                   to={"/admin-dashboard/users"}
                   className="flex items-center text-gray-300 hover:text-purple-400 font-semibold transition-colors duration-300 text-sm sm:text-base"
@@ -97,6 +98,18 @@ function AdminHeader() {
                   <FaCog className="mr-1 sm:mr-2 text-purple-400 text-lg sm:text-xl" />
                   <span className="hidden sm:inline-block">Settings</span>
                   <span className="inline-block sm:hidden">Set</span>
+                </Link>
+              </li>
+              {/* NEW: Register/Add User Link - similar to your Header's register button */}
+              <li>
+                <Link
+                  to={"/register"} // Link to the general registration page
+                  className="px-3 py-1 sm:px-5 sm:py-2 bg-gradient-to-br from-blue-600 to-blue-800 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-900 transition-all transform hover:scale-105 duration-300 ease-in-out flex items-center text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
+                >
+                  <FaUserPlus className="mr-1 text-base sm:mr-2 sm:text-lg" />{" "}
+                  {/* Using FaUserPlus for "Register" */}
+                  <span className="hidden md:inline-block">Register</span>{" "}
+                  <span className="inline-block md:hidden">Reg</span>{" "}
                 </Link>
               </li>
               <li>

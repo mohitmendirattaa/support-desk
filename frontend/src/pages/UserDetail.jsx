@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import {
   fetchSingleUser,
   resetUserManagement,
-  updateUser, 
+  updateUser,
 } from "../features/users/userSlice";
 import { toast } from "react-toastify";
 import {
@@ -17,13 +17,13 @@ import {
   Code,
   ArrowLeft,
   Fingerprint,
-  Edit, 
-  Save, 
-  XCircle, 
+  Edit,
+  Save,
+  XCircle,
 } from "lucide-react";
 
 function UserDetail() {
-  const { id } = useParams();
+  const { id } = useParams(); // ID from URL parameter
   const dispatch = useDispatch();
   const { user: loggedInUser } = useSelector((state) => state.auth);
   const { singleUser, isLoadingUsers, isErrorUsers, messageUsers } =
@@ -32,11 +32,12 @@ function UserDetail() {
   const [isEditing, setIsEditing] = useState(false); // State to manage edit mode
   const [editableUser, setEditableUser] = useState({}); // State to hold editable user data
 
-   useEffect(() => {
-    /* if (isErrorUsers) {
-      toast.error(messageUsers);
-    } 
- */
+  useEffect(() => {
+    // Moved error toast inside this useEffect to ensure it only runs once
+    // if (isErrorUsers) {
+    //   toast.error(messageUsers);
+    // }
+
     if (id && loggedInUser && loggedInUser.token) {
       dispatch(fetchSingleUser(id));
     } else if (!loggedInUser || !loggedInUser.token) {
@@ -46,7 +47,7 @@ function UserDetail() {
     return () => {
       dispatch(resetUserManagement());
     };
-  }, [dispatch, id, loggedInUser, isErrorUsers, messageUsers]);
+  }, [dispatch, id, loggedInUser, isErrorUsers, messageUsers]); // Added isErrorUsers and messageUsers to dependencies
 
   // When singleUser changes, update editableUser
   useEffect(() => {
@@ -77,7 +78,7 @@ function UserDetail() {
     // Dispatch the update action with editableUser data
     if (loggedInUser && loggedInUser.token && id) {
       dispatch(updateUser({ userId: id, userData: editableUser }));
-      setIsEditing(false);
+      setIsEditing(false); // Exit edit mode after saving
     } else {
       toast.error("Authentication token not found or user ID missing.");
     }
@@ -118,8 +119,10 @@ function UserDetail() {
   }
 
   // Destructure from singleUser for display when not editing
+  // Check for both _id and id, preferring _id if both exist
   const {
-    _id,
+    _id, // Typically from MongoDB
+    id: apiId, // Common for many REST APIs
     name,
     email,
     employeeCode,
@@ -129,6 +132,9 @@ function UserDetail() {
     role,
     createdAt,
   } = singleUser;
+
+  // Determine which ID to display
+  const userIdForDisplay = _id || apiId;
 
   const {
     name: editableName,
@@ -141,8 +147,8 @@ function UserDetail() {
   } = editableUser;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8 font-sans flex items-center justify-center mt-10">
-      <div className="max-w-2xl w-full mx-auto bg-white mb-20 rounded-3xl shadow-2xl mt-20 mb-5 overflow-hidden border border-gray-100 transform hover:scale-105 transition-transform duration-300 ease-in-out">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8 font-sans flex items-center justify-center">
+      <div className="max-w-2xl w-full mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 transform hover:scale-105 transition-transform duration-300 ease-in-out">
         <div className="bg-gradient-to-r from-blue-700 to-indigo-800 p-6 text-white text-center rounded-t-3xl relative">
           <Link
             to="/admin-dashboard/users"
@@ -345,8 +351,9 @@ function UserDetail() {
               />
               <div>
                 <p className="text-sm text-gray-500 font-medium">User ID</p>
+                {/* Use userIdForDisplay which checks both _id and id */}
                 <p className="text-base font-semibold text-gray-900 break-all">
-                  {_id || "N/A"}
+                  {userIdForDisplay || "N/A"}
                 </p>
               </div>
             </div>

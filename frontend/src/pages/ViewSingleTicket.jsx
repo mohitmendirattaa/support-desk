@@ -1,36 +1,26 @@
-import React from "react";
-// import BackButton from "../components/BackButton"; // BackButton removed from import
-import { useEffect } from "react";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { getSingleTicketAsAdmin, reset } from "../features/tickets/ticketSlice";
+import Spinner from "../components/Spinner";
+import BackButton from "../components/BackButton";
 import {
   FaPencilAlt,
   FaTimesCircle,
   FaCalendarAlt,
   FaInfoCircle,
 } from "react-icons/fa";
-import { useSelector, useDispatch } from "react-redux";
-import { getTicket, closeTicket } from "../features/tickets/ticketSlice";
-import { useParams, useNavigate } from "react-router-dom";
-import Spinner from "../components/Spinner";
-import BackButton from "../components/BackButton";
 
-function Ticket() {
-  console.log("Ticket component is rendering."); // <-- ADDED FOR DEBUGGING
+function ViewSingleTicket() {
   const { ticket, isLoading, isError, message } = useSelector(
     (state) => state.tickets
   );
-  console.log("Ticket state from Redux:", {
-    ticket,
-    isLoading,
-    isError,
-    message,
-  }); // <-- ADDED FOR DEBUGGING
-  const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const { ticketId } = useParams();
-  console.log("Ticket ID from URL params:", ticketId); // <-- ADDED FOR DEBUGGING
+  const navigate = useNavigate();
 
-  // Reverting status classes to simpler, light-theme friendly versions
   const getStatusClasses = (status) => {
     switch (status) {
       case "new":
@@ -39,8 +29,23 @@ function Ticket() {
         return "bg-green-200 text-green-800";
       case "closed":
         return "bg-red-200 text-red-800";
+      case "pending":
+        return "bg-yellow-200 text-yellow-800";
       default:
         return "bg-gray-200 text-gray-800";
+    }
+  };
+
+  const getPriorityClasses = (priority) => {
+    switch (priority) {
+      case "High":
+        return "text-red-600";
+      case "Medium":
+        return "text-orange-600";
+      case "Low":
+        return "text-green-600";
+      default:
+        return "text-gray-900";
     }
   };
 
@@ -48,61 +53,40 @@ function Ticket() {
     if (isError) {
       toast.error(message);
     }
-    dispatch(getTicket(ticketId))
-      .unwrap()
-      .catch((error) => {
-        toast.error(error.message || "Failed to load ticket details.");
-        navigate("/tickets");
-      });
-  }, [ticketId, dispatch, isError, message, navigate]);
 
-  // IMPORTANT: Ensure ticket.id exists before rendering anything that depends on it
-  // This catches cases where ticket might be null or an empty object initially
+    if (!user) {
+      navigate("/login");
+    } else if (user.role !== "admin") {
+      toast.error("You are not authorized to view this page.");
+      navigate("/admin-dashboard");
+    } else {
+      dispatch(getSingleTicketAsAdmin(ticketId));
+    }
+
+    return () => {
+      dispatch(reset());
+    };
+  }, [ticketId, user, isError, message, dispatch, navigate]);
+
   if (isLoading) {
-    // Separated isLoading check for clearer console output
-    console.log("Ticket component: isLoading is true, showing Spinner."); // <-- ADDED FOR DEBUGGING
     return <Spinner />;
   }
 
-  // Error State Styling: BackButton removed from here
-  if (isError) {
-    console.log(
-      "Ticket component: isError is true, showing error message. Message:",
-      message
-    ); // <-- ADDED FOR DEBUGGING
+  if (isError || !ticket || !ticket.id) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-red-50 text-red-700 p-8 rounded-lg shadow-md">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-red-50 text-red-700 p-8 rounded-lg shadow-md mx-auto max-w-lg mt-10">
         <FaInfoCircle className="text-4xl mb-4 text-red-600" />
         <h2 className="text-2xl font-bold mb-4">Ticket Load Error</h2>
         <p className="text-lg text-center">
           {message ||
-            "The requested ticket could not be found or accessed. Please try again."}
+            "Could not load ticket details. Please try again or check the ticket ID."}
         </p>
-        {/* <div className="mt-8">
-          <BackButton />
-        </div> */}
+        <div className="mt-8">
+          <BackButton url="/admin-dashboard/tickets" />
+        </div>
       </div>
     );
   }
-
-  if (!ticket || !ticket.id) {
-    console.log(
-      "Ticket component: Ticket data or ticket.id is missing AFTER loading, showing Spinner/fallback."
-    );
-    return <Spinner />;
-  }
-
-  const onTicketClose = () => {
-    dispatch(closeTicket(ticketId))
-      .unwrap()
-      .then(() => {
-        toast.success("Ticket Closed Successfully!");
-        navigate("/tickets");
-      })
-      .catch((error) => {
-        toast.error(error.message || "Failed to close ticket.");
-      });
-  };
 
   const handleEditClick = () => {
     toast.info("Edit functionality is under construction. Stay tuned!");
@@ -130,29 +114,25 @@ function Ticket() {
         })
       : "N/A";
   };
-
-  console.log(
-    "Ticket component: Full ticket object available, rendering JSX:",
-    ticket
-  ); // <-- ADDED FOR DEBUGGING
-
+  console.log(ticket.user);
   return (
-    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 bg-gray-50">
+    // The pb-16 class provides padding-bottom for the gap.
+    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 bg-gray-100 pb-24">
       <header className="flex justify-between items-center mb-8">
-        <BackButton />
+        <BackButton url="/admin-dashboard/tickets" />
         <h1 className="text-4xl font-extrabold text-blue-800 tracking-tight text-center flex-grow">
-          {ticket.ServiceType} Ticket
+          {ticket.service || "Support"} Ticket
         </h1>
         <div className="w-auto opacity-0">
           <BackButton />
         </div>
       </header>
+
       <header className="container mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div className="flex-grow text-center md:text-left">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-blue-800 tracking-tight flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 flex-wrap">
-            Ticket {/* Ticket ID text: Now showing full ID and uppercase */}
-            {/* FIXED: ticket._id to ticket.id */}
-            <span className="text-gray-900">#{ticket.id.toUpperCase()}</span>
+            Ticket
+            <span className="text-gray-900">#{ticket.id?.toUpperCase()}</span>
             <span
               className={`px-5 py-2 rounded-full text-base sm:text-lg font-bold uppercase shadow-lg ${getStatusClasses(
                 ticket.status
@@ -174,31 +154,33 @@ function Ticket() {
           >
             <FaPencilAlt /> Edit Ticket
           </button>
-          {ticket.status !== "closed" && (
-            <button
-              onClick={onTicketClose}
-              className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition-colors"
-            >
-              <FaTimesCircle /> Close Ticket
-            </button>
-          )}
         </div>
       </header>
 
-      {/* Main Ticket Details Cards Section: Reverted to light theme card styles */}
       <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Ticket Details Card */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
-          {/* Heading: Reverted to light theme colors and border */}
+          <h2 className="text-2xl font-bold text-blue-700 mb-6 pb-4 border-b border-gray-200">
+            <FaInfoCircle className="inline-block mr-3 text-blue-700" />
+            User Information
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+            <DetailItem label="User ID" value={ticket.userId || "N/A"} />
+            <DetailItem label="Name" value={ticket.user?.name || "N/A"} />
+            <DetailItem label="Email" value={ticket.user?.email || "N/A"} />
+            <DetailItem
+              label="Employee Code"
+              value={ticket.user?.employeeCode || "N/A"}
+            />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
           <h2 className="text-2xl font-bold text-blue-700 mb-6 pb-4 border-b border-gray-200">
             <FaInfoCircle className="inline-block mr-3 text-blue-700" />
             Issue Overview
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
-            <DetailItem
-              label="Service Type"
-              value={ticket.ServiceType || "N/A"}
-            />
+            <DetailItem label="Service Type" value={ticket.service || "N/A"} />
             <DetailItem label="Category" value={ticket.category || "N/A"} />
             <DetailItem
               label="Sub-Category"
@@ -208,6 +190,7 @@ function Ticket() {
               label="Priority"
               value={ticket.priority || "N/A"}
               highlight={true}
+              priorityClass={getPriorityClasses(ticket.priority)}
             />
             <DetailItem
               label="Start Date"
@@ -220,24 +203,19 @@ function Ticket() {
           </div>
         </div>
 
-        {/* Description & Notes Card */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 flex flex-col">
-          {/* Description Section */}
-          <h2 className="text-2xl font-bold text-blue-700 mb-6 pb-4 border-b border-gray-200">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 flex flex-col lg:col-span-2">
+          <h2 className="text-2xl font-bold text-blue-700 mt-0 mb-6 pb-4 border-b border-gray-200">
             <FaPencilAlt className="inline-block mr-3 text-blue-700" />
             Detailed Description
           </h2>
-          {/* Description content area: Reverted to light theme styles */}
           <div className="flex-grow bg-gray-50 p-6 rounded-lg text-gray-700 text-lg leading-relaxed border border-gray-200">
             <p>{ticket.description || "No description provided."}</p>
           </div>
 
-          {/* Notes Section (Placeholder for future comments/updates) */}
           <h2 className="text-2xl font-bold text-blue-700 mt-8 mb-6 pb-4 border-b border-gray-200">
             <FaInfoCircle className="inline-block mr-3 text-blue-700" />
             Notes
           </h2>
-          {/* Notes content area: Reverted to light theme styles */}
           <div className="text-gray-500 italic bg-gray-50 p-6 rounded-lg border border-gray-200">
             No internal notes or updates available for this ticket yet.
           </div>
@@ -247,15 +225,19 @@ function Ticket() {
   );
 }
 
-// DetailItem component: Reverted text colors for light theme
-const DetailItem = ({ label, value, highlight = false }) => (
+const DetailItem = ({
+  label,
+  value,
+  highlight = false,
+  priorityClass = "",
+}) => (
   <div>
     <p className="text-gray-500 font-medium text-sm uppercase tracking-wider mb-1">
       {label}
     </p>
     <p
       className={`text-xl font-semibold ${
-        highlight ? "text-orange-600" : "text-gray-900"
+        highlight ? priorityClass : "text-gray-900"
       }`}
     >
       {value || "N/A"}
@@ -263,4 +245,4 @@ const DetailItem = ({ label, value, highlight = false }) => (
   </div>
 );
 
-export default Ticket;
+export default ViewSingleTicket;

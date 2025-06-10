@@ -50,7 +50,7 @@ function Header() {
             <li>
               <Link
                 to={"/profile"}
-                className="flex items-center text-gray-300 hover:text-blue-400 font-semibold transition-colors duration-300 text-sm sm:text-base" // Responsive font size
+                className="flex items-center text-gray-300 hover:text-blue-400 font-semibold transition-colors duration-300 text-sm sm:text-base"
               >
                 <FaUser className="mr-1 sm:mr-2 text-blue-400 text-lg sm:text-xl" />
                 <span className="hidden sm:inline-block">
@@ -63,7 +63,7 @@ function Header() {
             <li>
               <button
                 onClick={onLogout}
-                className="px-3 py-1 sm:px-5 sm:py-2 bg-gradient-to-br from-red-600 to-red-800 text-white font-semibold rounded-lg shadow-lg hover:from-red-700 hover:to-red-900 transition-all transform hover:scale-105 duration-300 ease-in-out flex items-center text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75" // Responsive padding and font size
+                className="px-3 py-1 sm:px-5 sm:py-2 bg-gradient-to-br from-red-600 to-red-800 text-white font-semibold rounded-lg shadow-lg hover:from-red-700 hover:to-red-900 transition-all transform hover:scale-105 duration-300 ease-in-out flex items-center text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75"
               >
                 <FaSignOutAlt className="mr-1 text-base sm:mr-2 sm:text-lg" />
                 <span className="hidden md:inline-block">Logout</span>
@@ -76,26 +76,11 @@ function Header() {
             <li>
               <Link
                 to={"/login"}
-                className="flex items-center text-gray-300 hover:text-blue-400 font-semibold transition-colors duration-300 text-sm sm:text-base" // Responsive font size
+                className="flex items-center text-gray-300 hover:text-blue-400 font-semibold transition-colors duration-300 text-sm sm:text-base"
               >
                 <FaSignInAlt className="mr-1 sm:mr-2 text-blue-400 text-lg sm:text-xl" />
                 <span className="hidden md:inline-block">Login</span>
                 <span className="inline-block md:hidden">In</span>
-            
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                to={"/register"}
-                className="px-3 py-1 sm:px-5 sm:py-2 bg-gradient-to-br from-blue-600 to-blue-800 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-900 transition-all transform hover:scale-105 duration-300 ease-in-out flex items-center text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75" // Responsive padding and font size
-              >
-                <FaUser className="mr-1 text-base sm:mr-2 sm:text-lg" />{" "}
-            
-                <span className="hidden md:inline-block">Register</span>{" "}
-           
-                <span className="inline-block md:hidden">Reg</span>{" "}
-           
               </Link>
             </li>
           </>

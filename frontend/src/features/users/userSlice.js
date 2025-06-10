@@ -1,55 +1,50 @@
 // features/users/userSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import userService from "./userService"; // Import the user service
-import { toast } from "react-toastify"; // Import toast for notifications
+import userService from "./userService";
+import { toast } from "react-toastify";
 
 // Initial state for user management (all users, single user, loading, error)
 const initialState = {
   allUsers: [],
-  singleUser: null, // State to hold a single user's data
+  singleUser: null,
   isLoadingUsers: false,
   isErrorUsers: false,
-  messageUsers: "", // For error messages
-  isSuccessUsers: false, // Added for general success state
+  messageUsers: "",
+  isSuccessUsers: false,
 };
 
-// Async Thunk to fetch all users (existing)
+// Async Thunk to fetch all users
 export const fetchAllUsers = createAsyncThunk(
-  "users/fetchAll", // Action type prefix
+  "users/fetchAll",
   async (_, thunkAPI) => {
     try {
-      // Get the user token from the auth state (assuming it's available)
       const token = thunkAPI.getState().auth.user.token;
       if (!token) {
-        // If no token, reject the thunk with an error message
         return thunkAPI.rejectWithValue("No authentication token found");
       }
-      // Call the service function to fetch users
       return await userService.getAllUsers(token);
     } catch (error) {
-      // Handle errors from the API call
       const message =
         (error.response &&
           error.response.data &&
           error.response.data.message) ||
         error.message ||
         error.toString();
-      // Reject the thunk with the error message
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-// Async Thunk to fetch a single user by ID (existing)
+// Async Thunk to fetch a single user by ID
 export const fetchSingleUser = createAsyncThunk(
-  "users/fetchSingle", // Action type prefix for fetching a single user
+  "users/fetchSingle",
   async (userId, thunkAPI) => {
+    // 'userId' received here must be a valid GUID
     try {
       const token = thunkAPI.getState().auth.user.token;
       if (!token) {
         return thunkAPI.rejectWithValue("No authentication token found");
       }
-      // Call the service function to fetch a single user
       return await userService.getSingleUser(userId, token);
     } catch (error) {
       const message =
@@ -63,16 +58,16 @@ export const fetchSingleUser = createAsyncThunk(
   }
 );
 
-// NEW: Async Thunk to update user status (existing)
+// Async Thunk to update user status
 export const updateUserStatus = createAsyncThunk(
-  "users/updateUserStatus", // Action type prefix for updating user status
+  "users/updateUserStatus",
   async ({ id, status }, thunkAPI) => {
+    // 'id' received here must be a valid GUID
     try {
       const token = thunkAPI.getState().auth.user.token;
       if (!token) {
         return thunkAPI.rejectWithValue("No authentication token found");
       }
-      // Call the service function to update user status
       return await userService.updateUserStatus(id, status, token);
     } catch (error) {
       const message =
@@ -86,16 +81,16 @@ export const updateUserStatus = createAsyncThunk(
   }
 );
 
-// NEW: Async Thunk to update user details
+// Async Thunk to update user details
 export const updateUser = createAsyncThunk(
-  "users/update", // Action type prefix for updating user details
+  "users/update",
   async ({ userId, userData }, thunkAPI) => {
+    // 'userId' received here must be a valid GUID
     try {
       const token = thunkAPI.getState().auth.user.token;
       if (!token) {
         return thunkAPI.rejectWithValue("No authentication token found");
       }
-      // Call the service function to update user details
       return await userService.updateUser(userId, userData, token);
     } catch (error) {
       const message =
@@ -110,109 +105,96 @@ export const updateUser = createAsyncThunk(
 );
 
 const userSlice = createSlice({
-  name: "users", // Slice name
-  initialState, // Initial state
+  name: "users",
+  initialState,
   reducers: {
-    // Reducer to reset user management state (e.g., on logout or component unmount)
     resetUserManagement: (state) => {
       state.allUsers = [];
       state.singleUser = null;
       state.isLoadingUsers = false;
       state.isErrorUsers = false;
       state.messageUsers = "";
-      state.isSuccessUsers = false; // Reset success state
+      state.isSuccessUsers = false;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Handle pending state for fetchAllUsers
       .addCase(fetchAllUsers.pending, (state) => {
         state.isLoadingUsers = true;
-        state.isErrorUsers = false; // Reset error on new request
+        state.isErrorUsers = false;
         state.messageUsers = "";
       })
-      // Handle fulfilled (success) state for fetchAllUsers
       .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.isLoadingUsers = false;
         state.isSuccessUsers = true;
-        state.allUsers = action.payload; // Store the fetched users
+        state.allUsers = action.payload;
       })
-      // Handle rejected (failure) state for fetchAllUsers
       .addCase(fetchAllUsers.rejected, (state, action) => {
         state.isLoadingUsers = false;
         state.isErrorUsers = true;
-        state.messageUsers = action.payload; // Store the error message
-        state.allUsers = []; // Clear users on error
+        state.messageUsers = action.payload;
+        state.allUsers = [];
       })
-      // Handle pending state for fetchSingleUser
       .addCase(fetchSingleUser.pending, (state) => {
-        state.isLoadingUsers = true; // Reusing isLoadingUsers for single user fetch
+        state.isLoadingUsers = true;
         state.isErrorUsers = false;
         state.messageUsers = "";
-        state.singleUser = null; // Clear previous single user data
+        state.singleUser = null;
       })
-      // Handle fulfilled (success) state for fetchSingleUser
       .addCase(fetchSingleUser.fulfilled, (state, action) => {
         state.isLoadingUsers = false;
         state.isSuccessUsers = true;
-        state.singleUser = action.payload; // Store the fetched single user
+        state.singleUser = action.payload;
       })
-      // Handle rejected (failure) state for fetchSingleUser
       .addCase(fetchSingleUser.rejected, (state, action) => {
         state.isLoadingUsers = false;
         state.isErrorUsers = true;
-        state.messageUsers = action.payload; // Store the error message
-        state.singleUser = null; // Clear single user on error
+        state.messageUsers = action.payload;
+        state.singleUser = null;
       })
-      // Handle pending state for updateUserStatus
       .addCase(updateUserStatus.pending, (state) => {
         state.isLoadingUsers = true;
         state.isErrorUsers = false;
         state.messageUsers = "";
       })
-      // Handle fulfilled (success) state for updateUserStatus
       .addCase(updateUserStatus.fulfilled, (state, action) => {
         state.isLoadingUsers = false;
         state.isSuccessUsers = true;
-        // Update the specific user in the allUsers array
+        // CHANGE HERE: Use action.payload.id instead of action.payload._id
         state.allUsers = state.allUsers.map((user) =>
-          user._id === action.payload._id ? action.payload : user
+          user.id === action.payload.id ? action.payload : user
         );
-        toast.success("User status updated successfully!"); // Success toast
+        toast.success("User status updated successfully!");
       })
-      // Handle rejected (failure) state for updateUserStatus
       .addCase(updateUserStatus.rejected, (state, action) => {
         state.isLoadingUsers = false;
         state.isErrorUsers = true;
-        state.messageUsers = action.payload; // Store the error message
-        toast.error(action.payload); // Error toast
+        state.messageUsers = action.payload;
+        toast.error(action.payload);
       })
-      // NEW: Handle pending state for updateUser
       .addCase(updateUser.pending, (state) => {
         state.isLoadingUsers = true;
         state.isErrorUsers = false;
         state.messageUsers = "";
       })
-      // NEW: Handle fulfilled (success) state for updateUser
       .addCase(updateUser.fulfilled, (state, action) => {
         state.isLoadingUsers = false;
         state.isSuccessUsers = true;
-        state.singleUser = action.payload; // Update the singleUser with the new data
-        // Also update in allUsers if it's currently populated
+        state.singleUser = action.payload;
+        // CHANGE HERE: Use action.payload.id instead of action.payload._id
         state.allUsers = state.allUsers.map((user) =>
-          user._id === action.payload._id ? action.payload : user
+          user.id === action.payload.id ? action.payload : user
         );
-        toast.success("User updated successfully!"); // Success toast
+        toast.success("User updated successfully!");
       })
-      // NEW: Handle rejected (failure) state for updateUser
       .addCase(updateUser.rejected, (state, action) => {
         state.isLoadingUsers = false;
         state.isErrorUsers = true;
-        state.messageUsers = action.payload; // Store the error message
-        toast.error(action.payload); // Error toast
+        state.messageUsers = action.payload;
+        toast.error(action.payload);
       });
   },
 });
 
-export const { resetUserManagement } = userSlice.actions; // Export actions
-export default userSlice.reducer; // Export the reducer
+export const { resetUserManagement } = userSlice.actions;
+export default userSlice.reducer;

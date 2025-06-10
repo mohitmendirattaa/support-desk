@@ -75,7 +75,7 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 sm:p-6 lg:p-8 font-sans">
+    <div className="min-h-[85vh] flex items-center justify-center bg-gray-50 p-4 sm:p-6 lg:p-8 font-sans">
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-2xl w-full text-center border border-gray-100 transform transition-all duration-300 hover:shadow-2xl mx-auto">
         <section className="mb-8">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4 leading-tight flex items-center justify-center">

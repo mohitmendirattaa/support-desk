@@ -63,8 +63,8 @@ function UserManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 font-sans flex items-center justify-center mt-20">
-      <div className="max-w-7xl w-full mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-10">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 font-sans flex items-center justify-center">
+      <div className="max-w-7xl w-full mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 ">
         <div className="bg-gradient-to-r from-green-600 to-teal-700 p-8 text-white text-center rounded-t-2xl flex items-center justify-center">
           <Users size={48} className="mr-4 opacity-90" />
           <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight">
