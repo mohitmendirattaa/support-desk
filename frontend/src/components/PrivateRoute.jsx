@@ -1,45 +1,46 @@
 import React, { useEffect, useRef } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
 function PrivateRoute({ children, requiredRole }) {
-  const { user } = useSelector((state) => state.auth);
+  const { user, isLoggingOut } = useSelector((state) => state.auth);
+  const location = useLocation();
 
-  const toastShownRef = useRef(null);
+  const lastToastState = useRef(null);
 
   useEffect(() => {
-    let currentAuthKey = "authorized";
+    let currentAuthStatus = "authorized";
     if (!user) {
-      currentAuthKey = "not_logged_in";
+      currentAuthStatus = "not_logged_in";
     } else if (requiredRole && user.role !== requiredRole) {
-      currentAuthKey = "role_mismatch";
+      currentAuthStatus = "role_mismatch";
     }
 
-    if (
-      currentAuthKey === toastShownRef.current &&
-      currentAuthKey !== "authorized"
-    ) {
+    if (isLoggingOut || location.pathname === "/login") {
+      lastToastState.current = null;
       return;
     }
 
-    if (currentAuthKey === "authorized") {
-      if (toastShownRef.current !== null) {
-        toastShownRef.current = null;
+    if (currentAuthStatus === "authorized") {
+      lastToastState.current = null;
+      return;
+    }
+
+    if (currentAuthStatus === "not_logged_in") {
+      if (lastToastState.current !== "not_logged_in") {
+        toast.error("You need to log in to access this page.");
+        lastToastState.current = "not_logged_in";
       }
-      return;
+    } else if (currentAuthStatus === "role_mismatch") {
+      if (lastToastState.current !== "role_mismatch") {
+        toast.error(
+          `You do not have the necessary permissions to view this page.`
+        );
+        lastToastState.current = "role_mismatch";
+      }
     }
-
-    if (currentAuthKey === "not_logged_in") {
-      toast.error("You need to log in to access this page.");
-      toastShownRef.current = "not_logged_in";
-    } else if (currentAuthKey === "role_mismatch") {
-      toast.error(
-        `You do not have the necessary permissions to view this page.`
-      );
-      toastShownRef.current = "role_mismatch";
-    }
-  }, [user, requiredRole]);
+  }, [user, requiredRole, isLoggingOut, location.pathname]);
 
   if (!user) {
     return <Navigate to="/login" replace />;

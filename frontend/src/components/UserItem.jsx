@@ -36,10 +36,8 @@ function UserItem({ userData }) {
   const handleStatusToggle = () => {
     const newStatus = userData.status === "active" ? "inactive" : "active";
 
-    // Change from userData._id to userData.id
     if (userData.id) {
-      // Check for userData.id
-      dispatch(updateUserStatus({ id: userData.id, status: newStatus })); // Pass userData.id
+      dispatch(updateUserStatus({ id: userData.id, status: newStatus }));
     } else {
       console.error(
         "UserItem: Cannot update status - userData.id is missing or invalid for userData:",
@@ -50,45 +48,38 @@ function UserItem({ userData }) {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-7 gap-4 p-4 lg:p-6 hover:bg-gray-50 transition-colors cursor-pointer items-center border-b border-gray-100 last:border-b-0">
-      {/* Name column */}
+    <div className="grid grid-cols-1 md:grid-cols-7 gap-4 px-4 py-2 lg:px-6 lg:py-2 hover:bg-gray-50 transition-colors cursor-pointer items-center border-b border-gray-100 last:border-b-0">
       <div className="text-gray-900 font-medium md:col-span-1">
         <Link
-          // Change from userData._id to userData.id
           onClick={() =>
             console.log(
               "UserItem: Navigating to user details for ID:",
               userData.id
             )
           }
-          to={`/admin-dashboard/users/${userData.id}`} // Change to userData.id
+          to={`/admin-dashboard/users/${userData.id}`}
           className="text-blue-600 hover:text-blue-800 hover:underline"
         >
           {userData.name}
         </Link>
       </div>
 
-      {/* Employee Code column (hidden on small screens, shown on md and up) */}
       <div className="hidden md:block text-gray-700 text-sm">
         {userData.employeeCode}
       </div>
 
-      {/* Company column (hidden on small screens, shown on md and up) */}
       <div className="hidden md:block text-gray-700 text-sm">
         {userData.company}
       </div>
 
-      {/* Role column (hidden on small screens, shown on md and up) */}
       <div className="hidden md:block text-gray-700 text-sm">
         {userData.role}
       </div>
 
-      {/* Registered On column (hidden on small screens, shown on md and up) */}
       <div className="hidden md:block text-gray-700 text-sm">
         {formatDate(userData.createdAt)}
       </div>
 
-      {/* Status column - Make it clickable */}
       <div className="flex justify-start items-center md:col-span-1">
         <span
           onClick={handleStatusToggle}
@@ -100,10 +91,8 @@ function UserItem({ userData }) {
         </span>
       </div>
 
-      {/* View Details Button column */}
       <div className="flex justify-end md:justify-start md:col-span-1">
         <Link
-          // Change from userData._id to userData.id
           onClick={() =>
             console.log(
               "UserItem: Navigating to user details from button for ID:",
@@ -111,13 +100,12 @@ function UserItem({ userData }) {
             )
           }
           className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors text-sm font-semibold whitespace-nowrap"
-          to={`/admin-dashboard/users/${userData.id}`} // Change to userData.id
+          to={`/admin-dashboard/users/${userData.id}`}
         >
           View Details
         </Link>
       </div>
 
-      {/* Mobile-specific summary (shown on small screens, hidden on md and up) */}
       <div className="md:hidden col-span-full border-t border-gray-100 pt-4 mt-4">
         <h3 className="text-lg font-bold text-blue-800 mb-2">User Summary</h3>
         <p className="text-gray-700 mb-1">

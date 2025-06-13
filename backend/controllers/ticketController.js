@@ -3,11 +3,6 @@
 const User = require("../models/userModel");
 const Ticket = require("../models/ticketModel"); // Your MSSQL TicketModel
 
-/**
- * @desc Get tickets for the authenticated user
- * @route GET /api/tickets
- * @access Private
- */
 const getTickets = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);

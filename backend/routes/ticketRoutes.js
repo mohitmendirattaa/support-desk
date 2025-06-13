@@ -21,10 +21,7 @@ router.get("/", protect, getTickets);
 router.post("/", protect, createTicket);
 router.get("/:id", protect, getTicket); // This is for users to get *their own* ticket
 router.put("/:id", protect, updateTicket);
-router.delete("/:id", protect, deleteTicket);
-
-// Admin Routes for Tickets (Protected and Role-Based)
-// Get all tickets for admin (e.g., /api/tickets/admin/allTickets)
+router.delete("/admin/:id", protect, authorizeRoles(["admin"]), deleteTicket);
 router.get(
   "/admin/allTickets",
   protect,

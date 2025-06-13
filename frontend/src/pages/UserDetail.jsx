@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"; // Import useState
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -26,17 +26,17 @@ function UserDetail() {
   const { id } = useParams(); // ID from URL parameter
   const dispatch = useDispatch();
   const { user: loggedInUser } = useSelector((state) => state.auth);
+  // Assuming 'users' is the correct slice name as per previous discussions
   const { singleUser, isLoadingUsers, isErrorUsers, messageUsers } =
-    useSelector((state) => state.users);
+    useSelector((state) => state.users); // Corrected this based on previous error
 
   const [isEditing, setIsEditing] = useState(false); // State to manage edit mode
   const [editableUser, setEditableUser] = useState({}); // State to hold editable user data
 
   useEffect(() => {
-    // Moved error toast inside this useEffect to ensure it only runs once
-    // if (isErrorUsers) {
-    //   toast.error(messageUsers);
-    // }
+    if (isErrorUsers && messageUsers) {
+      toast.error(messageUsers);
+    }
 
     if (id && loggedInUser && loggedInUser.token) {
       dispatch(fetchSingleUser(id));
@@ -47,7 +47,7 @@ function UserDetail() {
     return () => {
       dispatch(resetUserManagement());
     };
-  }, [dispatch, id, loggedInUser, isErrorUsers, messageUsers]); // Added isErrorUsers and messageUsers to dependencies
+  }, [dispatch, id, loggedInUser, isErrorUsers, messageUsers]);
 
   // When singleUser changes, update editableUser
   useEffect(() => {
@@ -94,7 +94,7 @@ function UserDetail() {
 
   if (isLoadingUsers) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-80px)]"> {/* Adjusted height */}
         <p className="text-lg text-gray-700">Loading user profile...</p>
       </div>
     );
@@ -102,7 +102,7 @@ function UserDetail() {
 
   if (isErrorUsers) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-80px)]"> {/* Adjusted height */}
         <p className="text-lg text-red-600">
           Error loading user profile: {messageUsers}
         </p>
@@ -112,17 +112,16 @@ function UserDetail() {
 
   if (!singleUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-80px)]"> {/* Adjusted height */}
         <p className="text-lg text-gray-700">User not found.</p>
       </div>
     );
   }
 
   // Destructure from singleUser for display when not editing
-  // Check for both _id and id, preferring _id if both exist
   const {
-    _id, // Typically from MongoDB
-    id: apiId, // Common for many REST APIs
+    _id,
+    id: apiId,
     name,
     email,
     employeeCode,
@@ -147,8 +146,9 @@ function UserDetail() {
   } = editableUser;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8 font-sans flex items-center justify-center">
-      <div className="max-w-2xl w-full mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 transform hover:scale-105 transition-transform duration-300 ease-in-out">
+    // Adjusted outer container for dashboard integration
+    <div className="w-full h-full p-4 md:p-6 lg:p-8 flex items-center justify-center">
+      <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 transition-transform duration-300 ease-in-out">
         <div className="bg-gradient-to-r from-blue-700 to-indigo-800 p-6 text-white text-center rounded-t-3xl relative">
           <Link
             to="/admin-dashboard/users"
@@ -221,7 +221,7 @@ function UserDetail() {
 
         <div className="p-5 sm:p-7 lg:p-8 bg-gray-50">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out transform hover:-translate-y-1">
+            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out"> {/* Removed transform hover for smaller cards */}
               <Code size={24} className="text-indigo-600 mr-3 flex-shrink-0" />
               <div>
                 <p className="text-sm text-gray-500 font-medium">
@@ -243,7 +243,7 @@ function UserDetail() {
               </div>
             </div>
 
-            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out transform hover:-translate-y-1">
+            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out"> {/* Removed transform hover */}
               <Building
                 size={24}
                 className="text-green-600 mr-3 flex-shrink-0"
@@ -266,7 +266,7 @@ function UserDetail() {
               </div>
             </div>
 
-            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out transform hover:-translate-y-1">
+            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out"> {/* Removed transform hover */}
               <Phone size={24} className="text-purple-600 mr-3 flex-shrink-0" />
               <div>
                 <p className="text-sm text-gray-500 font-medium">Contact</p>
@@ -286,7 +286,7 @@ function UserDetail() {
               </div>
             </div>
 
-            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out transform hover:-translate-y-1">
+            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out"> {/* Removed transform hover */}
               <Mail size={24} className="text-red-600 mr-3 flex-shrink-0" />
               <div>
                 <p className="text-sm text-gray-500 font-medium">Email</p>
@@ -306,7 +306,7 @@ function UserDetail() {
               </div>
             </div>
 
-            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out transform hover:-translate-y-1">
+            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out"> {/* Removed transform hover */}
               <MapPin
                 size={24}
                 className="text-orange-600 mr-3 flex-shrink-0"
@@ -329,7 +329,7 @@ function UserDetail() {
               </div>
             </div>
 
-            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out transform hover:-translate-y-1">
+            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out"> {/* Removed transform hover */}
               <Calendar
                 size={24}
                 className="text-teal-600 mr-3 flex-shrink-0"
@@ -344,14 +344,13 @@ function UserDetail() {
               </div>
             </div>
 
-            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out transform hover:-translate-y-1 md:col-span-2">
+            <div className="flex items-center p-4 bg-white rounded-xl shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-200 ease-in-out md:col-span-2"> {/* Removed transform hover */}
               <Fingerprint
                 size={24}
                 className="text-gray-600 mr-3 flex-shrink-0"
               />
               <div>
                 <p className="text-sm text-gray-500 font-medium">User ID</p>
-                {/* Use userIdForDisplay which checks both _id and id */}
                 <p className="text-base font-semibold text-gray-900 break-all">
                   {userIdForDisplay || "N/A"}
                 </p>

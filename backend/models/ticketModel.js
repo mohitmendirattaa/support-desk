@@ -103,11 +103,7 @@ const TicketModel = {
     }
   },
 
-  /**
-   * Finds all tickets associated with a specific user ID.
-   * @param {string} userId - The GUID of the user.
-   * @returns {Promise<Array<object>>} An array of ticket records.
-   */
+  
   findByUserId: async (userId) => {
     const pool = getSqlPool();
     try {
@@ -125,11 +121,6 @@ const TicketModel = {
     }
   },
 
-  /**
-   * Finds a single ticket by its ID.
-   * @param {string} id - The unique ID of the ticket.
-   * @returns {Promise<object|null>} The ticket record if found, otherwise null.
-   */
   findById: async (id) => {
     const pool = getSqlPool();
     try {
@@ -275,11 +266,6 @@ const TicketModel = {
     }
   },
 
-  /**
-   * Deletes a ticket by its ID.
-   * @param {string} id - The ID of the ticket to delete.
-   * @returns {Promise<boolean>} True if the ticket was deleted, false otherwise.
-   */
   delete: async (id) => {
     const pool = getSqlPool();
     try {

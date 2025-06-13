@@ -3,6 +3,7 @@ import axios from "axios";
 const API_URL = "http://localhost:5000/api/tickets/";
 
 const createTicket = async (ticketData, token) => {
+  await new Promise((resolve) => setTimeout(resolve, 3000));
   const res = await axios.post(API_URL, ticketData, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -60,6 +61,15 @@ const getSingleTicketAsAdmin = async (ticketId, token) => {
   return res.data;
 };
 
+const deleteTicket = async (ticketId, token) => {
+  const res = await axios.delete(API_URL + ticketId, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+};
+
 const ticketService = {
   createTicket,
   getTickets,
@@ -67,6 +77,7 @@ const ticketService = {
   closeTicket,
   getAllTicketsForAdmin,
   getSingleTicketAsAdmin,
+  deleteTicket,
 };
 
 export default ticketService;

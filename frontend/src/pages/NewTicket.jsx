@@ -6,12 +6,19 @@ import { createTicket } from "../features/tickets/ticketSlice";
 import BackButton from "../components/BackButton";
 import { FaUser } from "react-icons/fa";
 
+// Import Lottie components and your animation data
+import Lottie from "react-lottie";
+import loadingAnimation from "../images/ticket.json"; // <--- ADJUST THIS PATH TO YOUR .lottie FILE
+
 // Define your SAP Modules and Digital Platforms
 const sapModules = ["MM", "SD", "FI", "PP", "PM", "PS", "QM", "Other"];
 const digitalPlatforms = ["Platform 1", "Platform 2", "Platform 3"];
 
 function NewTicket() {
   const { user } = useSelector((state) => state.auth);
+  // Assuming ticketSlice also exposes an isLoading state
+  const { isLoading: isTicketLoading } = useSelector((state) => state.tickets); // <--- Get loading state from tickets slice
+
   const { name, email, employeeCode, location, company, contact } = user;
 
   const [service, setService] = useState("Incident");
@@ -30,6 +37,16 @@ function NewTicket() {
 
   // Get today's date inYYYY-MM-DD format for the min attribute of the date input
   const today = new Date().toISOString().split("T")[0];
+
+  // Lottie animation default options
+  const defaultLottieOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: loadingAnimation,
+    rendererSettings: {
+      preserveAspectRatio: "xMidYMid slice",
+    },
+  };
 
   useEffect(() => {
     const start = new Date(startDate);
@@ -102,6 +119,29 @@ function NewTicket() {
         toast.error(error.message || "Failed to create ticket.");
       });
   };
+
+  // ----------------------------------------------------
+  // IMPORTANT: Display Lottie Spinner when ticket is loading
+  if (isTicketLoading) {
+    return (
+      <div
+        className="flex items-center justify-center min-h-screen" // Centers the spinner vertically and horizontally
+        style={{ backgroundColor: "rgba(255, 255, 255, 0.8)", zIndex: 1000 }} // Optional: a slight overlay
+      >
+        <div className="text-center">
+          <Lottie
+            options={defaultLottieOptions}
+            height={200} // Adjust size as needed
+            width={200} // Adjust size as needed
+          />
+          <p className="mt-4 text-xl font-semibold text-blue-700">
+            Submitting your ticket...
+          </p>
+        </div>
+      </div>
+    );
+  }
+  // ----------------------------------------------------
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 mb-8">
@@ -280,11 +320,11 @@ function NewTicket() {
               <button
                 type="submit"
                 className="w-full flex items-center justify-center px-6 py-4
-                               bg-gradient-to-r from-blue-600 to-indigo-700 text-white
-                               font-semibold text-lg rounded-xl shadow-lg
-                               hover:from-blue-700 hover:to-indigo-800
-                               transform hover:-translate-y-1 transition duration-300 ease-in-out
-                               focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"
+                                 bg-gradient-to-r from-blue-600 to-indigo-700 text-white
+                                 font-semibold text-lg rounded-xl shadow-lg
+                                 hover:from-blue-700 hover:to-indigo-800
+                                 transform hover:-translate-y-1 transition duration-300 ease-in-out
+                                 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"
               >
                 Submit Ticket
               </button>

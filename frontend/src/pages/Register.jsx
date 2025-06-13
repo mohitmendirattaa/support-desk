@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FaUser, FaCheckCircle, FaSpinner } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { register, reset } from "../features/auth/authSlice"; // Ensure 'reset' is imported
+import { register, reset } from "../features/auth/authSlice";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
@@ -12,7 +12,7 @@ function Register() {
     name: "",
     email: "",
     password: "",
-    password2: "", // For client-side password confirmation
+    password2: "",
     phoneNumber: "",
     employeeCode: "",
     company: "",
@@ -21,7 +21,7 @@ function Register() {
     selectedCityName: "",
   });
 
-  const [actualPhoneCode, setActualPhoneCode] = useState("91"); // Default to India's phone code
+  const [actualPhoneCode, setActualPhoneCode] = useState("91");
 
   const [allCountries, setAllCountries] = useState([]);
   const [statesOfSelectedCountry, setStatesOfSelectedCountry] = useState([]);
@@ -44,35 +44,23 @@ function Register() {
   const navigate = useNavigate();
 
   const {
-    // We still access these from Redux state for feedback (loading, error, success).
-    // `user` is the *currently logged-in user* (expected to be an admin on this page).
-    user: loggedInUser, // Keeping this to check if an admin is logged in (though implicit for this page)
+    user: loggedInUser,
     isError,
     isLoading,
     isSuccess,
     message,
   } = useSelector((state) => state.auth);
 
-  // Effect to handle the outcome of the registration attempt
   useEffect(() => {
     if (isError) {
-      // Display error message from Redux state or a generic one
       toast.error(message || "Registration failed. Please try again.");
-      // Dispatch reset to clear `isError`, `isSuccess`, `message` flags
-      // but NOT to log out the admin (this is handled by authSlice.js).
       dispatch(reset());
     }
 
     if (isSuccess) {
-      // Since this page is exclusively for admin-driven user creation,
-      // a `isSuccess` here means a new user was successfully added by the admin.
       toast.success("New user registered successfully!");
-
-      // Navigate the admin back to the user management page after successful creation.
-      // Make sure this path (`/admin-dashboard/users`) is correct for your application.
       navigate("/admin-dashboard/users");
 
-      // Reset the form fields to clear inputs for the next potential user registration.
       setFormData({
         name: "",
         email: "",
@@ -85,19 +73,18 @@ function Register() {
         selectedStateCode: "",
         selectedCityName: "",
       });
-
-      // Important: Do NOT dispatch `reset()` here on success.
-      // `reset()` would clear success flags but *more critically* if its implementation
-      // ever changed to clear `state.user`, it would log out the admin.
-      // The `authSlice` is now configured to NOT log out the admin on `register.fulfilled`,
-      // so we just need to clear the form and navigate.
+      dispatch(reset());
     }
-    // Dependencies: This effect runs when these values change.
-    // `loggedInUser` is not a direct dependency for the *action* taken here,
-    // as the page's purpose is already defined as admin-only new user creation.
-  }, [isSuccess, isError, message, navigate, dispatch]);
+  }, [
+    isSuccess,
+    isError,
+    message,
+    navigate,
+    dispatch,
+    isLoading,
+    loggedInUser,
+  ]);
 
-  // Effects for country, state, city dropdowns population and resets
   useEffect(() => {
     setAllCountries(Country.getAllCountries());
   }, []);
@@ -107,7 +94,7 @@ function Register() {
       setStatesOfSelectedCountry(State.getStatesOfCountry(selectedCountryCode));
       setFormData((prev) => ({
         ...prev,
-        selectedStateCode: "", // Clear state and city when country changes
+        selectedStateCode: "",
         selectedCityName: "",
       }));
     } else {
@@ -126,14 +113,13 @@ function Register() {
       setCitiesOfSelectedState(
         City.getCitiesOfState(selectedCountryCode, selectedStateCode)
       );
-      setFormData((prev) => ({ ...prev, selectedCityName: "" })); // Clear city when state changes
+      setFormData((prev) => ({ ...prev, selectedCityName: "" }));
     } else {
       setCitiesOfSelectedState([]);
       setFormData((prev) => ({ ...prev, selectedCityName: "" }));
     }
   }, [selectedCountryCode, selectedStateCode]);
 
-  // Form submission handler
   const onSubmit = async (e) => {
     e.preventDefault();
 
@@ -142,7 +128,6 @@ function Register() {
       return;
     }
 
-    // Get display names for location string based on selected codes
     const countryName =
       Country.getCountryByCode(selectedCountryCode)?.name || "";
     const stateName =
@@ -150,7 +135,6 @@ function Register() {
         ?.name || "";
     const cityName = selectedCityName;
 
-    // Construct the combined location string
     let location = "";
     if (cityName) {
       location = `${cityName}, ${
@@ -162,7 +146,6 @@ function Register() {
       location = countryName;
     }
 
-    // Validate all required fields are filled
     if (
       !name ||
       !email ||
@@ -176,10 +159,8 @@ function Register() {
       return;
     }
 
-    // Format phone number with country code
     const contact = `+${actualPhoneCode} ${phoneNumber}`;
 
-    // Prepare user data object for registration
     const userData = {
       name,
       email,
@@ -191,17 +172,10 @@ function Register() {
     };
 
     try {
-      // Dispatch the register async thunk.
-      // The .unwrap() method allows us to chain .then/.catch,
-      // but in this case, we rely on the `useEffect` listening to `isSuccess` and `isError`.
       await dispatch(register(userData)).unwrap();
-    } catch (error) {
-      // `useEffect` with `isError` will handle the toast notification for errors.
-      // No specific error handling needed here as it's covered by Redux state.
-    }
+    } catch (error) {}
   };
 
-  // Generic handler for text input changes
   const onChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevState) => ({
@@ -210,13 +184,12 @@ function Register() {
     }));
   };
 
-  // Specific handlers for select dropdown changes
   const handleCountryChange = (e) => {
     const code = e.target.value;
     setFormData((prevState) => ({
       ...prevState,
       selectedCountryCode: code,
-      selectedStateCode: "", // Reset dependent fields
+      selectedStateCode: "",
       selectedCityName: "",
     }));
   };
@@ -226,7 +199,7 @@ function Register() {
     setFormData((prevState) => ({
       ...prevState,
       selectedStateCode: code,
-      selectedCityName: "", // Reset dependent fields
+      selectedCityName: "",
     }));
   };
 
@@ -239,13 +212,12 @@ function Register() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-indigo-50 to-purple-50 pt-32 px-4 sm:px-6 lg:px-8 font-sans pb-8">
+    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-indigo-50 to-purple-50 pt-10 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="bg-white p-8 sm:p-10 rounded-2xl shadow-2xl max-w-4xl w-full border border-gray-100 transform transition-all duration-300 hover:shadow-xl">
         <section className="text-center mb-10">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-3 leading-tight flex items-center justify-center">
             <FaUser className="mr-4 text-indigo-700 text-3xl sm:text-4xl" />
-            <span className="text-indigo-800">Register New User</span>{" "}
-            {/* Changed title */}
+            <span className="text-indigo-800">Register New User</span>
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 max-w-lg mx-auto">
             Admin: Create new user accounts for the Welspun Support Desk.
@@ -254,7 +226,6 @@ function Register() {
 
         <form onSubmit={onSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-8">
-            {/* Full Name Input */}
             <div>
               <label
                 htmlFor="name"
@@ -274,7 +245,6 @@ function Register() {
               />
             </div>
 
-            {/* Employee Code Input */}
             <div>
               <label
                 htmlFor="employeeCode"
@@ -294,7 +264,6 @@ function Register() {
               />
             </div>
 
-            {/* Email Address Input */}
             <div>
               <label
                 htmlFor="email"
@@ -314,7 +283,6 @@ function Register() {
               />
             </div>
 
-            {/* Phone Number Input with Country Code Selector */}
             <div>
               <label
                 htmlFor="phoneNumber"
@@ -329,7 +297,7 @@ function Register() {
                   onChange={(e) => setActualPhoneCode(e.target.value)}
                 >
                   {allCountries
-                    .filter((c) => c.phonecode) // Ensure only countries with a phone code are shown
+                    .filter((c) => c.phonecode)
                     .map((country) => (
                       <option key={country.isoCode} value={country.phonecode}>
                         +{country.phonecode} ({country.isoCode})
@@ -337,7 +305,7 @@ function Register() {
                     ))}
                 </select>
                 <input
-                  type="tel" // Use type="tel" for phone numbers
+                  type="tel"
                   className="flex-grow px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 text-base placeholder-gray-400"
                   id="phoneNumber"
                   name="phoneNumber"
@@ -349,7 +317,6 @@ function Register() {
               </div>
             </div>
 
-            {/* Company Name Input */}
             <div>
               <label
                 htmlFor="company"
@@ -369,7 +336,6 @@ function Register() {
               />
             </div>
 
-            {/* Country Selector */}
             <div>
               <label
                 htmlFor="country"
@@ -394,7 +360,6 @@ function Register() {
               </select>
             </div>
 
-            {/* State/Region Selector */}
             <div>
               <label
                 htmlFor="state"
@@ -428,7 +393,6 @@ function Register() {
               </select>
             </div>
 
-            {/* City Selector */}
             <div>
               <label
                 htmlFor="city"
@@ -462,7 +426,6 @@ function Register() {
               </select>
             </div>
 
-            {/* Password Input */}
             <div>
               <label
                 htmlFor="password"
@@ -482,7 +445,6 @@ function Register() {
               />
             </div>
 
-            {/* Confirm Password Input */}
             <div>
               <label
                 htmlFor="password2"
@@ -506,12 +468,12 @@ function Register() {
             <button
               type="submit"
               className="w-full flex items-center justify-center px-6 py-4
-                                 bg-gradient-to-r from-indigo-600 to-purple-700 text-white
-                                 font-semibold text-lg rounded-xl shadow-lg
-                                 hover:from-indigo-700 hover:to-purple-800
-                                 transform hover:-translate-y-1 transition duration-300 ease-in-out
-                                 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50"
-              disabled={isLoading} // Disable button while loading/submitting
+                             bg-gradient-to-r from-indigo-600 to-purple-700 text-white
+                             font-semibold text-lg rounded-xl shadow-lg
+                             hover:from-indigo-700 hover:to-purple-800
+                             transform hover:-translate-y-1 transition duration-300 ease-in-out
+                             focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50"
+              disabled={isLoading}
             >
               {isLoading ? (
                 <FaSpinner className="animate-spin mr-3 text-xl" />
