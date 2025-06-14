@@ -2,16 +2,14 @@ const sql = require("mssql");
 const getSqlPool = require("../config/db").getSqlPool;
 
 const TicketModel = {
-  // Private helper to generate a unique numeric part for ticket IDs
   _generateUniqueNumericPart: async () => {
     const pool = getSqlPool();
     let uniqueNumericPart;
     let isUnique = false;
     let attempts = 0;
-    const MAX_ATTEMPTS = 5; // Max attempts to find a unique ID
+    const MAX_ATTEMPTS = 5;
 
     while (!isUnique && attempts < MAX_ATTEMPTS) {
-      // Generate an 8-digit random number
       uniqueNumericPart = Math.floor(
         10000000 + Math.random() * 90000000
       ).toString();
@@ -19,13 +17,13 @@ const TicketModel = {
       request.input(
         "ticketIdPattern",
         sql.NVarChar(255),
-        `%${uniqueNumericPart}` // Check for existing IDs ending with this pattern
+        `%${uniqueNumericPart}`
       );
       const result = await request.query(
-        "SELECT COUNT(*) AS count FROM Tickets WHERE id LIKE @ticketIdPattern;"
+        "SELECT COUNT(*) AS count FROM Tickets WHERE id LIKE @ticketIdPattern;" // Corrected: Removed extra ')'
       );
       if (result.recordset[0].count === 0) {
-        isUnique = true; // Found a unique part
+        isUnique = true;
       }
       attempts++;
     }
@@ -38,7 +36,6 @@ const TicketModel = {
     return uniqueNumericPart;
   },
 
-  // Private helper to validate subcategories based on category
   _validateSubCategory: (category, subCategory) => {
     const validSAPModules = ["MM", "SD", "FI", "PP", "PM", "PS", "QM", "Other"];
     const validDigitalPlatforms = ["Platform 1", "Platform 2", "Platform 3"];
@@ -48,7 +45,7 @@ const TicketModel = {
     } else if (category === "Digital") {
       return validDigitalPlatforms.includes(subCategory);
     }
-    return false; // Invalid category or subCategory
+    return false;
   },
 
   create: async ({
@@ -56,12 +53,15 @@ const TicketModel = {
     priority,
     subCategory,
     description,
-    user, // This should be the userId (GUID)
+    user,
     status = "new",
     startDate,
     endDate,
-    service, // Maps to ServiceType in DB
+    service,
     category,
+    attachmentBuffer,
+    attachmentMimeType,
+    attachmentFileName,
   }) => {
     const pool = getSqlPool();
     try {
@@ -74,22 +74,38 @@ const TicketModel = {
 
       const request = pool.request();
       request.input("id", sql.NVarChar(255), fullTicketId);
-      request.input("userId", sql.UniqueIdentifier, user); // User ID as GUID
+      request.input("userId", sql.UniqueIdentifier, user);
       request.input("description", sql.NVarChar(sql.MAX), description);
       request.input("priority", sql.NVarChar(50), priority);
       request.input("subCategory", sql.NVarChar(255), subCategory);
       request.input("status", sql.NVarChar(50), status);
       request.input("startDate", sql.DateTime, startDate);
-      request.input("endDate", sql.DateTime, endDate || null); // endDate can be null
-      request.input("serviceValue", sql.NVarChar(50), service); // `serviceValue` maps to `ServiceType` column
+      request.input("endDate", sql.DateTime, endDate || null);
+      request.input("serviceValue", sql.NVarChar(50), service);
       request.input("category", sql.NVarChar(50), category);
+      request.input(
+        "attachment",
+        sql.VarBinary(sql.MAX),
+        attachmentBuffer || null
+      );
+      request.input(
+        "attachmentMimeType",
+        sql.NVarChar(255),
+        attachmentMimeType || null
+      );
+      request.input(
+        "attachmentFileName",
+        sql.NVarChar(255),
+        attachmentFileName || null
+      );
 
       const result = await request.query(`
-        INSERT INTO Tickets (id, userId, description, priority, subCategory, status, startDate, endDate, ServiceType, category)
+        INSERT INTO Tickets (id, userId, description, priority, subCategory, status, startDate, endDate, ServiceType, category, Attachment, AttachmentMimeType, AttachmentFileName)
         OUTPUT INSERTED.id, INSERTED.userId, INSERTED.description, INSERTED.priority,
                 INSERTED.subCategory, INSERTED.status, INSERTED.startDate, INSERTED.endDate,
-                INSERTED.ServiceType, INSERTED.category, INSERTED.createdAt, INSERTED.updatedAt
-        VALUES (@id, @userId, @description, @priority, @subCategory, @status, @startDate, @endDate, @serviceValue, @category);
+                INSERTED.ServiceType, INSERTED.category, INSERTED.createdAt, INSERTED.updatedAt,
+                INSERTED.Attachment, INSERTED.AttachmentMimeType, INSERTED.AttachmentFileName
+        VALUES (@id, @userId, @description, @priority, @subCategory, @status, @startDate, @endDate, @serviceValue, @category, @attachment, @attachmentMimeType, @attachmentFileName);
       `);
 
       return result.recordset[0];
@@ -103,19 +119,36 @@ const TicketModel = {
     }
   },
 
-  
   findByUserId: async (userId) => {
     const pool = getSqlPool();
     try {
       const request = pool.request();
       request.input("userId", sql.UniqueIdentifier, userId);
       const result = await request.query(`
-        SELECT id, userId, description, priority, subCategory, status, startDate, endDate, ServiceType, category, createdAt, updatedAt
+        SELECT id, userId, description, priority, subCategory, status, startDate, endDate, ServiceType, category, createdAt, updatedAt, Attachment, AttachmentMimeType, AttachmentFileName
         FROM Tickets
         WHERE userId = @userId
         ORDER BY createdAt DESC;
       `);
-      return result.recordset;
+      return result.recordset.map((record) => ({
+        id: record.id,
+        userId: record.userId,
+        description: record.description,
+        priority: record.priority,
+        subCategory: record.subCategory,
+        status: record.status,
+        startDate: record.startDate,
+        endDate: record.endDate,
+        ServiceType: record.ServiceType, // Explicitly map ServiceType
+        category: record.category,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        attachment: record.Attachment
+          ? record.Attachment.toString("base64")
+          : null,
+        attachmentMimeType: record.AttachmentMimeType, // Explicitly added
+        attachmentFileName: record.AttachmentFileName, // Explicitly added
+      }));
     } catch (err) {
       throw new Error(`Error finding tickets by user ID: ${err.message}`);
     }
@@ -127,11 +160,33 @@ const TicketModel = {
       const request = pool.request();
       request.input("id", sql.NVarChar(255), id);
       const result = await request.query(`
-        SELECT id, userId, description, priority, subCategory, status, startDate, endDate, ServiceType, category, createdAt, updatedAt
+        SELECT id, userId, description, priority, subCategory, status, startDate, endDate, ServiceType, category, createdAt, updatedAt, Attachment, AttachmentMimeType, AttachmentFileName
         FROM Tickets
         WHERE id = @id;
       `);
-      return result.recordset[0] || null;
+      const record = result.recordset[0];
+      if (record) {
+        return {
+          id: record.id,
+          userId: record.userId,
+          description: record.description,
+          priority: record.priority,
+          subCategory: record.subCategory,
+          status: record.status,
+          startDate: record.startDate,
+          endDate: record.endDate,
+          ServiceType: record.ServiceType, // Explicitly map ServiceType
+          category: record.category,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt,
+          attachment: record.Attachment
+            ? record.Attachment.toString("base64")
+            : null,
+          attachmentMimeType: record.AttachmentMimeType, // Explicitly added
+          attachmentFileName: record.AttachmentFileName, // Explicitly added
+        };
+      }
+      return null;
     } catch (err) {
       throw new Error(`Error finding ticket by ID: ${err.message}`);
     }
@@ -152,28 +207,30 @@ const TicketModel = {
           t.status,
           t.startDate,
           t.endDate,
-          t.ServiceType AS service, -- Alias to 'service' for frontend consistency
+          t.ServiceType AS service,
           t.category,
           t.createdAt,
           t.updatedAt,
-          u.id AS 'user.id',         -- User's ID for nested object
-          u.name AS 'user.name',     -- User's name
-          u.email AS 'user.email',    -- User's email
+          t.Attachment,
+          t.AttachmentMimeType,
+          t.AttachmentFileName,
+          u.id AS 'user.id',
+          u.name AS 'user.name',
+          u.email AS 'user.email',
           u.employeeCode AS 'user.employeeCode'
         FROM
           Tickets t
         JOIN
-          Users u ON t.userId = u.id -- Assuming 'Users' is your user table and 'id' is its primary key
+          Users u ON t.userId = u.id
         WHERE
           t.id = @id;
       `);
 
-      // Transform the flat recordset into a nested 'user' object as expected by the frontend
       if (result.recordset.length > 0) {
         const record = result.recordset[0];
         return {
           id: record.id,
-          userId: record.userId, // Keep the direct userId for backend context
+          userId: record.userId,
           description: record.description,
           priority: record.priority,
           subCategory: record.subCategory,
@@ -184,6 +241,11 @@ const TicketModel = {
           category: record.category,
           createdAt: record.createdAt,
           updatedAt: record.updatedAt,
+          attachment: record.Attachment
+            ? record.Attachment.toString("base64")
+            : null,
+          attachmentMimeType: record.AttachmentMimeType,
+          attachmentFileName: record.AttachmentFileName,
           user: {
             id: record["user.id"],
             name: record["user.name"],
@@ -192,7 +254,7 @@ const TicketModel = {
           },
         };
       }
-      return null; // No ticket found
+      return null;
     } catch (err) {
       throw new Error(
         `Error finding ticket by ID with user details: ${err.message}`
@@ -208,21 +270,34 @@ const TicketModel = {
 
       let queryParts = [];
       for (const field in fieldsToUpdate) {
-        // Exclude system-managed or immutable fields
         if (
           fieldsToUpdate.hasOwnProperty(field) &&
           field !== "id" &&
           field !== "userId" &&
           field !== "createdAt" &&
-          field !== "ticketIdPrefix" // Assuming this is also immutable after creation
+          field !== "ticketIdPrefix"
         ) {
           let dbFieldName = field;
-          if (field === "service") {
-            dbFieldName = "ServiceType"; // Map 'service' from input to 'ServiceType' column in DB
-          }
-
           let sqlType;
+          let value = fieldsToUpdate[field];
+
           switch (field) {
+            case "service":
+              dbFieldName = "ServiceType";
+              sqlType = sql.NVarChar(50);
+              break;
+            case "attachmentBuffer":
+              dbFieldName = "Attachment";
+              sqlType = sql.VarBinary(sql.MAX);
+              break;
+            case "attachmentMimeType":
+              dbFieldName = "AttachmentMimeType";
+              sqlType = sql.NVarChar(255);
+              break;
+            case "attachmentFileName":
+              dbFieldName = "AttachmentFileName";
+              sqlType = sql.NVarChar(255);
+              break;
             case "description":
               sqlType = sql.NVarChar(sql.MAX);
               break;
@@ -234,33 +309,55 @@ const TicketModel = {
             case "category":
             case "priority":
             case "subCategory":
-            case "service": // Corresponds to @service input
               sqlType = sql.NVarChar(255);
               break;
             default:
-              continue; // Skip unknown fields
+              continue;
           }
-          request.input(field, sqlType, fieldsToUpdate[field]);
+          request.input(field, sqlType, value || null);
           queryParts.push(`${dbFieldName} = @${field}`);
         }
       }
 
       if (queryParts.length === 0) {
-        return await TicketModel.findById(id); // No fields to update, return current state
+        return await TicketModel.findById(id);
       }
 
-      queryParts.push("updatedAt = GETUTCDATE()"); // Automatically update updatedAt timestamp
+      queryParts.push("updatedAt = GETUTCDATE()");
 
       const result = await request.query(`
         UPDATE Tickets
         SET ${queryParts.join(", ")}
         OUTPUT INSERTED.id, INSERTED.userId, INSERTED.description, INSERTED.priority,
                 INSERTED.subCategory, INSERTED.status, INSERTED.startDate, INSERTED.endDate,
-                INSERTED.ServiceType, INSERTED.category, INSERTED.createdAt, INSERTED.updatedAt
+                INSERTED.ServiceType, INSERTED.category, INSERTED.createdAt, INSERTED.updatedAt,
+                INSERTED.Attachment, INSERTED.AttachmentMimeType, INSERTED.AttachmentFileName
         WHERE id = @id;
       `);
 
-      return result.recordset[0] || null; // Return the updated record
+      const updatedRecord = result.recordset[0];
+      if (updatedRecord) {
+        return {
+          id: updatedRecord.id,
+          userId: updatedRecord.userId,
+          description: updatedRecord.description,
+          priority: updatedRecord.priority,
+          subCategory: updatedRecord.subCategory,
+          status: updatedRecord.status,
+          startDate: updatedRecord.startDate,
+          endDate: updatedRecord.endDate,
+          ServiceType: updatedRecord.ServiceType, // Explicitly map ServiceType
+          category: updatedRecord.category,
+          createdAt: updatedRecord.createdAt,
+          updatedAt: updatedRecord.updatedAt,
+          attachment: updatedRecord.Attachment
+            ? updatedRecord.Attachment.toString("base64")
+            : null,
+          attachmentMimeType: updatedRecord.AttachmentMimeType, // Explicitly added
+          attachmentFileName: updatedRecord.AttachmentFileName, // Explicitly added
+        };
+      }
+      return null;
     } catch (err) {
       throw new Error(`Error updating ticket: ${err.message}`);
     }
@@ -275,7 +372,7 @@ const TicketModel = {
         DELETE FROM Tickets
         WHERE id = @id;
       `);
-      return result.rowsAffected[0] > 0; // Returns true if at least one row was affected
+      return result.rowsAffected[0] > 0;
     } catch (err) {
       throw new Error(`Error deleting ticket: ${err.message}`);
     }
@@ -295,25 +392,27 @@ const TicketModel = {
             t.status,
             t.startDate,
             t.endDate,
-            t.ServiceType AS service, -- Alias to 'service' for frontend consistency
+            t.ServiceType AS service,
             t.category,
             t.createdAt,
             t.updatedAt,
-            u.id AS 'user.id',       -- User's ID for nested object
-            u.name AS 'user.name',   -- User's name
-            u.email AS 'user.email'  -- User's email
+            t.Attachment,
+            t.AttachmentMimeType,
+            t.AttachmentFileName,
+            u.id AS 'user.id',
+            u.name AS 'user.name',
+            u.email AS 'user.email'
         FROM
             Tickets t
         JOIN
-            Users u ON t.userId = u.id -- Assuming 'Users' is your user table and 'id' is its primary key
+            Users u ON t.userId = u.id
         ORDER BY
             t.createdAt DESC;
       `);
 
-      // Transform the flat recordset into nested 'user' objects as expected by the frontend
       return result.recordset.map((record) => ({
         id: record.id,
-        userId: record.userId, // Keep the direct userId for backend context
+        userId: record.userId,
         description: record.description,
         priority: record.priority,
         subCategory: record.subCategory,
@@ -324,8 +423,13 @@ const TicketModel = {
         category: record.category,
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
+        attachment: record.Attachment
+          ? record.Attachment.toString("base64")
+          : null,
+        attachmentMimeType: record.AttachmentMimeType,
+        attachmentFileName: record.AttachmentFileName,
         user: {
-          id: record["user.id"], // Correctly assign the user's ID
+          id: record["user.id"],
           name: record["user.name"],
           email: record["user.email"],
         },

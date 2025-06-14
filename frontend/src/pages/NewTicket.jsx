@@ -31,6 +31,7 @@ function NewTicket() {
   );
   const [endDate, setEndDate] = useState("");
   const [description, setDescription] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null); // New state for the selected file
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -83,6 +84,33 @@ function NewTicket() {
     }
   }, [category]);
 
+  // Handler for file input change
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Basic validation for file types (you can enhance this)
+      const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "application/pdf",
+        "application/msword", // .doc
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+      ];
+      if (allowedTypes.includes(file.type)) {
+        setSelectedFile(file);
+      } else {
+        toast.error(
+          "Unsupported file type. Please upload an image, PDF, or Word document."
+        );
+        setSelectedFile(null); // Clear the selection if invalid
+        e.target.value = null; // Clear the input field
+      }
+    } else {
+      setSelectedFile(null);
+    }
+  };
+
   const onSubmit = (e) => {
     e.preventDefault();
 
@@ -99,17 +127,24 @@ function NewTicket() {
       return;
     }
 
-    dispatch(
-      createTicket({
-        subCategory,
-        description,
-        priority,
-        startDate,
-        endDate,
-        service,
-        category,
-      })
-    )
+    // Create a FormData object to send both text and file data
+    const ticketData = new FormData();
+    ticketData.append("subCategory", subCategory);
+    ticketData.append("description", description);
+    ticketData.append("priority", priority);
+    ticketData.append("startDate", startDate);
+    ticketData.append("endDate", endDate);
+    ticketData.append("service", service);
+    ticketData.append("category", category);
+
+    if (selectedFile) {
+      ticketData.append("file", selectedFile); // Append the selected file
+      // NEW: Append MIME type and file name for backend storage
+      ticketData.append("attachmentMimeType", selectedFile.type);
+      ticketData.append("attachmentFileName", selectedFile.name);
+    }
+
+    dispatch(createTicket(ticketData)) // Pass the FormData object
       .unwrap()
       .then(() => {
         toast.success("New ticket created successfully!");
@@ -294,7 +329,7 @@ function NewTicket() {
 
             {/* Description Header */}
             <div className="col-span-1 md:col-span-2">
-              <div className="bg-blue-600 text-white font-bold text-lg py-3 px-6 rounded-lg mb-6 text-center shadow-md">
+              <div className="bg-blue-600 text-white font-bold text-lg py-3 px-6 rounded-lg mb-1 text-center shadow-md">
                 TICKET DESCRIPTION
               </div>
             </div>
@@ -304,7 +339,6 @@ function NewTicket() {
               <label htmlFor="description" className="sr-only">
                 Description
               </label>
-              {/* Screen reader only label */}
               <textarea
                 name="description"
                 id="description"
@@ -316,15 +350,76 @@ function NewTicket() {
               />
             </div>
 
+            <div className="col-span-1 md:col-span-2">
+              <div className="bg-blue-600 text-white font-bold text-lg py-3 px-6 rounded-lg mb-1 text-center shadow-md">
+                UPLOAD FILE
+              </div>
+            </div>
+
+            {/* File Picker Box */}
+            <div className="col-span-1 md:col-span-2 mt-2">
+              <label
+                htmlFor="file-upload"
+                className="block text-gray-700 text-sm font-semibold mb-2"
+              >
+                Attach Files (Images, PDFs, Word Documents)
+              </label>
+              <div className="flex items-center justify-center w-full">
+                <label
+                  htmlFor="file-upload"
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition duration-300 ease-in-out"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg
+                      className="w-8 h-8 mb-4 text-gray-500"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 20 16"
+                    >
+                      <path
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L7 9m3-3 3 3"
+                      />
+                    </svg>
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">Click to upload</span> or
+                      drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      JPG, PNG, GIF, PDF, DOC, DOCX (MAX. 5MB)
+                    </p>
+                  </div>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    // Restrict accepted file types directly in the input
+                    accept=".jpeg,.jpg,.png,.gif,.pdf,.doc,.docx"
+                  />
+                </label>
+              </div>
+              {selectedFile && (
+                <p className="mt-2 text-sm text-gray-600">
+                  Selected file:{" "}
+                  <span className="font-medium">{selectedFile.name}</span>
+                </p>
+              )}
+            </div>
+
             <div className="col-span-1 md:col-span-2 mt-4">
               <button
                 type="submit"
                 className="w-full flex items-center justify-center px-6 py-4
-                                 bg-gradient-to-r from-blue-600 to-indigo-700 text-white
-                                 font-semibold text-lg rounded-xl shadow-lg
-                                 hover:from-blue-700 hover:to-indigo-800
-                                 transform hover:-translate-y-1 transition duration-300 ease-in-out
-                                 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"
+                                     bg-gradient-to-r from-blue-600 to-indigo-700 text-white
+                                     font-semibold text-lg rounded-xl shadow-lg
+                                     hover:from-blue-700 hover:to-indigo-800
+                                     transform hover:-translate-y-1 transition duration-300 ease-in-out
+                                     focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"
               >
                 Submit Ticket
               </button>

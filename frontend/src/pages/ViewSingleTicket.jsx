@@ -117,7 +117,7 @@ function ViewSingleTicket() {
   console.log(ticket.user);
   return (
     // The pb-16 class provides padding-bottom for the gap.
-    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 bg-gray-100 pb-24">
+    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 bg-gray-50 pb-24">
       <header className="flex justify-between items-center mb-8">
         <BackButton url="/admin-dashboard/tickets" />
         <h1 className="text-4xl font-extrabold text-blue-800 tracking-tight text-center flex-grow">

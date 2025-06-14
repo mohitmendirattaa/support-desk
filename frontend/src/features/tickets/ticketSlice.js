@@ -273,8 +273,9 @@ export const ticketSlice = createSlice({
         state.isSuccess = true;
         state.message = `Ticket ${action.payload} deleted successfully!`;
         // Filter out the deleted ticket from the tickets array
+        // Changed `ticket._id` to `ticket.id` to match MS SQL Server's primary key name
         state.tickets = state.tickets.filter(
-          (ticket) => ticket._id !== action.payload
+          (ticket) => ticket.id !== action.payload
         );
       })
       .addCase(deleteTicket.rejected, (state, action) => {

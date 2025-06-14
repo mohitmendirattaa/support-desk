@@ -1,12 +1,21 @@
 // src/pages/TicketsPage.jsx
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { getAllTicketsForAdmin, reset } from "../features/tickets/ticketSlice";
+import {
+  getAllTicketsForAdmin,
+  deleteTicket,
+  reset,
+} from "../features/tickets/ticketSlice";
 import Spinner from "../components/Spinner";
-// Update import paths based on your structure
+import { toast } from "react-toastify";
 import TicketsTable from "../components/admin-ticket-page-components/TicketsTable";
 import PaginationControls from "../components/admin-ticket-page-components/PaginationControls";
-import TicketFilterSearchBar from "../components/admin-ticket-page-components/TicketFilterSearchBar"; // Import the new component
+import TicketFilterSearchBar from "../components/admin-ticket-page-components/TicketFilterSearchBar";
+import { Trash2 } from "lucide-react";
+import DeleteConfirmationModal from "../components/admin-ticket-page-components/DeleteConfirmationModal";
+import TicketsPageHeader from "../components/admin-ticket-page-components/TicketsPageHeader";
+import NoTicketsFoundMessage from "../components/admin-ticket-page-components/NoTicketsFoundMessage";
+import { TicketIcon, UserIcon } from "../components/admin-ticket-page-components/Icons";
 
 function TicketsPage() {
   const dispatch = useDispatch();
@@ -15,46 +24,15 @@ function TicketsPage() {
   );
   const { user } = useSelector((state) => state.auth);
 
-  // State for pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const ticketsPerPage = 10; // Number of tickets to display per page
+  const ticketsPerPage = 10;
 
-  // State for search term (ticket ID) - now managed in TicketsPage
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTicketIds, setSelectedTicketIds] = useState(new Set());
 
-  // Inline SVG for Ticket Icon
-  const TicketIcon = ({ className }) => (
-    <svg
-      className={className}
-      fill="currentColor"
-      viewBox="0 0 20 20"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        fillRule="evenodd"
-        d="M14.5 3.235V3h-.104c-1.425 0-2.852.124-4.276.368-1.417.243-2.834.61-4.238 1.13-1.4.52-2.784 1.18-4.148 1.95V3h-.104C1.942 3 1 3.942 1 5.096V17h18V5.096c0-1.154-.942-2.096-2.096-2.096zM3 15V7.473c1.077-.423 2.18-.756 3.308-.99 1.127-.234 2.26-.35 3.39-.35h.004c1.13 0 2.263.116 3.39.35 1.128.234 2.231.567 3.308.99V15H3zM15 11.5a.5.5 0 01-.5.5h-9a.5.5 0 010-1h9a.5.5 0 01.5.5z"
-        clipRule="evenodd"
-      ></path>
-    </svg>
-  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [idsToDelete, setIdsToDelete] = useState([]);
 
-  // Inline SVG for User Icon (reused for consistent styling)
-  const UserIcon = ({ className }) => (
-    <svg
-      className={className}
-      fill="currentColor"
-      viewBox="0 0 20 20"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        fillRule="evenodd"
-        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-        clipRule="evenodd"
-      ></path>
-    </svg>
-  );
-
-  // Effect to fetch tickets when component mounts or user/dispatch changes
   useEffect(() => {
     dispatch(reset());
 
@@ -68,30 +46,99 @@ function TicketsPage() {
       );
     }
 
+    if (isError) {
+      toast.error(message);
+    }
+
     return () => {
       dispatch(reset());
+      setSelectedTicketIds(new Set());
     };
-  }, [dispatch, user]);
+  }, [dispatch, user, isError, message]);
 
-  // --- Filtering Logic for Ticket ID ---
   const filteredTickets = tickets.filter((ticket) => {
     if (!searchTerm) {
       return true;
     }
-
-    // Using 'ticket.id' as the property for ticket ID
     const ticketIdToFilter = ticket.id ? String(ticket.id).toLowerCase() : "";
-
     return ticketIdToFilter.includes(searchTerm.toLowerCase());
   });
-  // --- End Filtering Logic ---
 
-  // Reset pagination to 1 when search term changes
   useEffect(() => {
     setCurrentPage(1);
+    setSelectedTicketIds(new Set());
   }, [searchTerm]);
 
-  // Calculate tickets for the current page for pagination
+  const handleSelectTicket = (ticketId, isChecked) => {
+    setSelectedTicketIds((prevSelected) => {
+      const newSelected = new Set(prevSelected);
+      if (isChecked) {
+        newSelected.add(ticketId);
+      } else {
+        newSelected.delete(ticketId);
+      }
+      return newSelected;
+    });
+  };
+
+  const handleSelectAllTickets = (isChecked) => {
+    setSelectedTicketIds((prevSelected) => {
+      const newSelected = new Set(prevSelected);
+      currentTickets.forEach((ticket) => {
+        if (isChecked) {
+          newSelected.add(ticket.id);
+        } else {
+          newSelected.delete(ticket.id);
+        }
+      });
+      return newSelected;
+    });
+  };
+
+  const handleDeleteTicket = (ticketId) => {
+    setIdsToDelete([ticketId]);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedTicketIds.size === 0) {
+      toast.info("Please select at least one ticket to delete.");
+      return;
+    }
+    setIdsToDelete(Array.from(selectedTicketIds));
+    setIsModalOpen(true);
+  };
+
+  const confirmDeletion = async () => {
+    setIsModalOpen(false);
+
+    const results = await Promise.allSettled(
+      idsToDelete.map((id) => dispatch(deleteTicket(id)).unwrap())
+    );
+
+    const successfullyDeleted = results.filter(
+      (res) => res.status === "fulfilled"
+    ).length;
+    const failedToDelete = results.filter(
+      (res) => res.status === "rejected"
+    ).length;
+
+    if (successfullyDeleted > 0) {
+      toast.success(`Successfully deleted ${successfullyDeleted} ticket(s)!`);
+    }
+    if (failedToDelete > 0) {
+      toast.error(
+        `Failed to delete ${failedToDelete} ticket(s). Check console for details.`
+      );
+      results
+        .filter((res) => res.status === "rejected")
+        .forEach((res) => console.error("Deletion failed:", res.reason));
+    }
+
+    setSelectedTicketIds(new Set());
+    setIdsToDelete([]);
+  };
+
   const indexOfLastTicket = currentPage * ticketsPerPage;
   const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
   const currentTickets = filteredTickets.slice(
@@ -99,13 +146,10 @@ function TicketsPage() {
     indexOfLastTicket
   );
 
-  // Function to change current page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Calculate total number of pages for pagination
   const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
 
-  // Conditional rendering: Access Denied if not an admin
   if (!user || user.role !== "admin") {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 font-sans">
@@ -122,12 +166,10 @@ function TicketsPage() {
     );
   }
 
-  // Conditional rendering: Show spinner while loading
   if (isLoading) {
     return <Spinner />;
   }
 
-  // Conditional rendering: Show error message if an error occurred
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 font-sans">
@@ -145,45 +187,40 @@ function TicketsPage() {
   return (
     <div className="min-h-screen bg-gray-50 pt-0 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6">
-        {/* Page Header Section */}
-        <header className="flex flex-col sm:flex-row items-center justify-between mb-4 pb-2 border-b border-gray-200">
-          <h1 className="text-4xl font-extrabold text-indigo-700 flex items-center mb-4 sm:mb-0">
-            <TicketIcon className="mr-3 w-10 h-10 text-indigo-500" /> All
-            Tickets (Admin View)
-          </h1>
-          <p className="text-lg text-gray-600">
-            Overview of all user-generated tickets.
-          </p>
-        </header>
+        <TicketsPageHeader TicketIcon={TicketIcon} />
 
-        {/* Search Input using the new component */}
         <TicketFilterSearchBar
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           onClearSearch={() => setSearchTerm("")}
         />
 
-        {/* Conditional rendering: No tickets found message */}
+        {selectedTicketIds.size > 0 && (
+          <button
+            onClick={handleDeleteSelected}
+            className="mb-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out"
+          >
+            <Trash2 size={20} className="mr-2" /> Delete Selected (
+            {selectedTicketIds.size})
+          </button>
+        )}
+
         {filteredTickets.length === 0 ? (
-          <div className="text-center py-10">
-            <TicketIcon className="text-gray-400 w-24 h-24 mx-auto mb-6" />
-            <p className="text-2xl text-gray-700 font-semibold">
-              {searchTerm
-                ? "No tickets found matching your search."
-                : "No tickets found."}
-            </p>
-            {!searchTerm && (
-              <p className="text-md text-gray-500 mt-2">
-                It seems no tickets have been raised yet.
-              </p>
-            )}
-          </div>
+          <NoTicketsFoundMessage
+            searchTerm={searchTerm}
+            TicketIcon={TicketIcon}
+          />
         ) : (
           <>
-            {/* Tickets Table Section */}
-            <TicketsTable currentTickets={currentTickets} UserIcon={UserIcon} />
+            <TicketsTable
+              currentTickets={currentTickets}
+              UserIcon={UserIcon}
+              onDelete={handleDeleteTicket}
+              selectedTicketIds={selectedTicketIds}
+              onSelectTicket={handleSelectTicket}
+              onSelectAllTickets={handleSelectAllTickets}
+            />
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
               <PaginationControls
                 currentPage={currentPage}
@@ -191,12 +228,19 @@ function TicketsPage() {
                 paginate={paginate}
                 indexOfFirstTicket={indexOfFirstTicket}
                 indexOfLastTicket={indexOfLastTicket}
-                totalTickets={filteredTickets.length} // Pass filtered count here
+                totalTickets={filteredTickets.length}
               />
             )}
           </>
         )}
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={confirmDeletion}
+        count={idsToDelete.length}
+      />
     </div>
   );
 }

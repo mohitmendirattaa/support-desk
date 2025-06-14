@@ -1,5 +1,4 @@
 import React from "react";
-// import BackButton from "../components/BackButton"; // BackButton removed from import
 import { useEffect } from "react";
 import { toast } from "react-toastify";
 import {
@@ -7,6 +6,10 @@ import {
   FaTimesCircle,
   FaCalendarAlt,
   FaInfoCircle,
+  FaPaperclip,
+  FaFilePdf,
+  FaFileWord,
+  FaFileAlt, // Generic file icon
 } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import { getTicket, closeTicket } from "../features/tickets/ticketSlice";
@@ -15,22 +18,14 @@ import Spinner from "../components/Spinner";
 import BackButton from "../components/BackButton";
 
 function Ticket() {
-  console.log("Ticket component is rendering."); // <-- ADDED FOR DEBUGGING
   const { ticket, isLoading, isError, message } = useSelector(
     (state) => state.tickets
   );
-  console.log("Ticket state from Redux:", {
-    ticket,
-    isLoading,
-    isError,
-    message,
-  }); // <-- ADDED FOR DEBUGGING
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { ticketId } = useParams();
-  console.log("Ticket ID from URL params:", ticketId); // <-- ADDED FOR DEBUGGING
 
-  // Reverting status classes to simpler, light-theme friendly versions
+  // Determines CSS classes for ticket status display
   const getStatusClasses = (status) => {
     switch (status) {
       case "new":
@@ -44,6 +39,7 @@ function Ticket() {
     }
   };
 
+  // Fetches ticket data on component mount or ticketId change
   useEffect(() => {
     if (isError) {
       toast.error(message);
@@ -56,20 +52,13 @@ function Ticket() {
       });
   }, [ticketId, dispatch, isError, message, navigate]);
 
-  // IMPORTANT: Ensure ticket.id exists before rendering anything that depends on it
-  // This catches cases where ticket might be null or an empty object initially
+  // Shows a spinner while loading ticket data
   if (isLoading) {
-    // Separated isLoading check for clearer console output
-    console.log("Ticket component: isLoading is true, showing Spinner."); // <-- ADDED FOR DEBUGGING
     return <Spinner />;
   }
 
-  // Error State Styling: BackButton removed from here
+  // Displays an error message if ticket loading fails
   if (isError) {
-    console.log(
-      "Ticket component: isError is true, showing error message. Message:",
-      message
-    ); // <-- ADDED FOR DEBUGGING
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] bg-red-50 text-red-700 p-8 rounded-lg shadow-md">
         <FaInfoCircle className="text-4xl mb-4 text-red-600" />
@@ -78,20 +67,16 @@ function Ticket() {
           {message ||
             "The requested ticket could not be found or accessed. Please try again."}
         </p>
-        {/* <div className="mt-8">
-          <BackButton />
-        </div> */}
       </div>
     );
   }
 
+  // Shows a spinner if ticket object is not yet available
   if (!ticket || !ticket.id) {
-    console.log(
-      "Ticket component: Ticket data or ticket.id is missing AFTER loading, showing Spinner/fallback."
-    );
     return <Spinner />;
   }
 
+  // Handler for closing a ticket
   const onTicketClose = () => {
     dispatch(closeTicket(ticketId))
       .unwrap()
@@ -104,10 +89,12 @@ function Ticket() {
       });
   };
 
+  // Placeholder for edit functionality
   const handleEditClick = () => {
     toast.info("Edit functionality is under construction. Stay tuned!");
   };
 
+  // Formats date strings to a readable format (e.g., "June 14, 2025")
   const formatDate = (dateString) => {
     return dateString
       ? new Date(dateString).toLocaleDateString("en-IN", {
@@ -118,6 +105,7 @@ function Ticket() {
       : "N/A";
   };
 
+  // Formats date-time strings to a readable format (e.g., "Jun 14, 2025, 12:00 PM")
   const formatDateTime = (dateString) => {
     return dateString
       ? new Date(dateString).toLocaleString("en-IN", {
@@ -131,10 +119,69 @@ function Ticket() {
       : "N/A";
   };
 
-  console.log(
-    "Ticket component: Full ticket object available, rendering JSX:",
-    ticket
-  ); // <-- ADDED FOR DEBUGGING
+  // Renders the attachment section
+  const renderAttachment = () => {
+    const { attachment, attachmentMimeType, attachmentFileName } = ticket;
+
+    // If attachment data, MIME type, and filename are all available
+    if (attachment && attachmentMimeType && attachmentFileName) {
+      const dataUrl = `data:${attachmentMimeType};base64,${attachment}`;
+
+      // Determine appropriate icon based on MIME type
+      const isPdf = attachmentMimeType === "application/pdf";
+      const isWord =
+        attachmentMimeType.includes("wordprocessingml") ||
+        attachmentMimeType === "application/msword";
+
+      return (
+        <div className="mt-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
+          <p className="text-gray-700 font-semibold mb-2 flex items-center gap-2">
+            <FaPaperclip className="text-blue-600" /> Attached File:
+            <a
+              href={dataUrl}
+              download={attachmentFileName} // This attribute forces download
+              target="_blank" // Opens in a new tab
+              rel="noopener noreferrer" // Security best practice for target="_blank"
+              className="text-blue-600 hover:underline flex items-center ml-2"
+            >
+              {isPdf && <FaFilePdf className="mr-1" />}
+              {isWord && <FaFileWord className="mr-1" />}
+              {!isPdf && !isWord && <FaFileAlt className="mr-1" />}{" "}
+              {attachmentFileName}
+            </a>
+          </p>
+          <p className="mt-2 text-sm text-gray-500">
+            Click the link above to download the file.
+          </p>
+        </div>
+      );
+    } else if (attachment) {
+      // Fallback for cases where attachment data exists but metadata is missing
+      return (
+        <div className="mt-4 p-4 bg-yellow-100 rounded-lg border border-yellow-200 text-yellow-800">
+          <p className="font-semibold flex items-center gap-2">
+            <FaInfoCircle /> Attachment found, but type/name missing from
+            backend.
+          </p>
+          <p className="text-sm mt-1">
+            <a
+              href={`data:application/octet-stream;base64,${attachment}`}
+              download="attachment"
+              className="text-blue-600 hover:underline flex items-center"
+            >
+              <FaFileAlt className="mr-1" /> Download Generic File
+            </a>
+          </p>
+        </div>
+      );
+    }
+    // Message when no attachment is present
+    return (
+      <div className="text-gray-500 italic bg-gray-50 p-6 rounded-lg border border-gray-200">
+        No attachment for this ticket.
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 bg-gray-50">
@@ -150,8 +197,7 @@ function Ticket() {
       <header className="container mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div className="flex-grow text-center md:text-left">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-blue-800 tracking-tight flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 flex-wrap">
-            Ticket {/* Ticket ID text: Now showing full ID and uppercase */}
-            {/* FIXED: ticket._id to ticket.id */}
+            Ticket
             <span className="text-gray-900">#{ticket.id.toUpperCase()}</span>
             <span
               className={`px-5 py-2 rounded-full text-base sm:text-lg font-bold uppercase shadow-lg ${getStatusClasses(
@@ -185,11 +231,8 @@ function Ticket() {
         </div>
       </header>
 
-      {/* Main Ticket Details Cards Section: Reverted to light theme card styles */}
       <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Ticket Details Card */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
-          {/* Heading: Reverted to light theme colors and border */}
           <h2 className="text-2xl font-bold text-blue-700 mb-6 pb-4 border-b border-gray-200">
             <FaInfoCircle className="inline-block mr-3 text-blue-700" />
             Issue Overview
@@ -220,34 +263,27 @@ function Ticket() {
           </div>
         </div>
 
-        {/* Description & Notes Card */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 flex flex-col">
-          {/* Description Section */}
-          <h2 className="text-2xl font-bold text-blue-700 mb-6 pb-4 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-blue-700 mb-4 pb-4 border-b border-gray-200">
             <FaPencilAlt className="inline-block mr-3 text-blue-700" />
             Detailed Description
           </h2>
-          {/* Description content area: Reverted to light theme styles */}
-          <div className="flex-grow bg-gray-50 p-6 rounded-lg text-gray-700 text-lg leading-relaxed border border-gray-200">
+          <div className="flex-grow bg-gray-50 p-6 rounded-lg text-gray-700 text-lg leading-relaxed border border-gray-200 mb-8">
             <p>{ticket.description || "No description provided."}</p>
           </div>
 
-          {/* Notes Section (Placeholder for future comments/updates) */}
-          <h2 className="text-2xl font-bold text-blue-700 mt-8 mb-6 pb-4 border-b border-gray-200">
-            <FaInfoCircle className="inline-block mr-3 text-blue-700" />
-            Notes
+          <h2 className="text-2xl font-bold text-blue-700 mb-2 pb-4 border-b border-gray-200">
+            <FaPaperclip className="inline-block mr-3 text-blue-700" />
+            Attachments
           </h2>
-          {/* Notes content area: Reverted to light theme styles */}
-          <div className="text-gray-500 italic bg-gray-50 p-6 rounded-lg border border-gray-200">
-            No internal notes or updates available for this ticket yet.
-          </div>
+          {renderAttachment()}
         </div>
       </div>
     </div>
   );
 }
 
-// DetailItem component: Reverted text colors for light theme
+// Reusable component for displaying a detail item (label and value)
 const DetailItem = ({ label, value, highlight = false }) => (
   <div>
     <p className="text-gray-500 font-medium text-sm uppercase tracking-wider mb-1">

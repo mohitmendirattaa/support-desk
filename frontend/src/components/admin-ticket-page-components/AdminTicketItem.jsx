@@ -1,7 +1,16 @@
+// src/components/AdminTicketItem.jsx
 import React from "react";
 import { Link } from "react-router-dom"; // Import Link for navigation
+import { Trash2 } from "lucide-react"; // Import Trash2 icon for delete
 
-function AdminTicketItem({ ticket }) {
+/**
+ * @param {Object} props - Component props
+ * @param {Object} props.ticket - The ticket data object
+ * @param {function(string): void} props.onDelete - Callback function to handle individual ticket deletion, takes ticket ID as argument
+ * @param {boolean} props.isSelected - Indicates if the current ticket is selected
+ * @param {function(string, boolean): void} props.onSelect - Callback function to handle ticket selection (ID, isChecked)
+ */
+function AdminTicketItem({ ticket, onDelete, isSelected, onSelect }) {
   // Helper to determine status badge styling
   const getStatusClass = (status) => {
     switch (status) {
@@ -32,16 +41,36 @@ function AdminTicketItem({ ticket }) {
 
   return (
     <tr className="hover:bg-gray-50 transition duration-150 ease-in-out">
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+      {/* Checkbox Column */}
+      <td className="px-4 py-1.5 whitespace-nowrap text-sm text-gray-900">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={(e) => onSelect(ticket.id, e.target.checked)}
+          className="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out rounded focus:ring-indigo-500"
+        />
+      </td>
+      {/* Ticket ID */}
+      <td className="px-4 py-1.5 whitespace-nowrap text-sm font-medium text-gray-900">
+    
         {ticket.id || "N/A"}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+      {/* Category */}
+      <td className="px-6 py-1.5 whitespace-nowrap text-sm text-gray-600">
+        {" "}
+        {/* Changed py-4 to py-1.5 */}
         {ticket.category}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+      {/* Sub-Category */}
+      <td className="px-6 py-1.5 whitespace-nowrap text-sm text-gray-600">
+        {" "}
+        {/* Changed py-4 to py-1.5 */}
         {ticket.subCategory}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      {/* Status */}
+      <td className="px-6 py-1.5 whitespace-nowrap">
+        {" "}
+        {/* Changed py-4 to py-1.5 */}
         <span
           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
             ticket.status
@@ -50,7 +79,8 @@ function AdminTicketItem({ ticket }) {
           {ticket.status}
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      {/* Priority */}
+      <td className="px-6 py-1.5 whitespace-nowrap">
         <span
           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityClass(
             ticket.priority
@@ -59,17 +89,35 @@ function AdminTicketItem({ ticket }) {
           {ticket.priority}
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+      {/* Raised By User */}
+      <td className="px-6 py-1.5 whitespace-nowrap text-sm text-gray-600">
+        {" "}
+        {/* Changed py-4 to py-1.5 */}
         {ticket.user ? ticket.user.name : "N/A"}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        {/* Changed from button to Link component */}
-        <Link
-          to={`/admin-dashboard/tickets/${ticket.id}`} // Link to the single ticket view using its ID
-          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
-        >
-          View Details
-        </Link>
+      {/* Actions */}
+      <td className="px-6 py-1.5 whitespace-nowrap text-sm font-medium">
+        {" "}
+        {/* Changed py-4 to py-1.5 */}
+        <div className="flex space-x-2">
+          {/* View Details Link */}
+          <Link
+            to={`/admin-dashboard/tickets/${ticket.id}`} // Link to the single ticket view using its ID
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
+          >
+            View Details
+          </Link>
+          {/* Individual Delete Button (Icon Only) - Conditional Rendering */}
+          {isSelected && (
+            <button
+              onClick={() => onDelete(ticket.id)} // Pass ticket.id to the onDelete handler
+              className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out"
+              title="Delete Ticket" // Added a title for accessibility
+            >
+              <Trash2 size={16} /> {/* Icon only */}
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   );

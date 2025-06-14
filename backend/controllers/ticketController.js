@@ -1,7 +1,36 @@
-// src/controllers/ticketController.js
-
 const User = require("../models/userModel");
-const Ticket = require("../models/ticketModel"); // Your MSSQL TicketModel
+const Ticket = require("../models/ticketModel");
+const multer = require("multer");
+
+const storage = multer.memoryStorage();
+
+const fileFilter = (req, file, cb) => {
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        "Unsupported file type. Only images (JPEG, PNG, GIF), PDFs, and Word documents (DOC, DOCX) are allowed."
+      ),
+      false
+    );
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: fileFilter,
+});
 
 const getTickets = async (req, res, next) => {
   try {
@@ -11,7 +40,6 @@ const getTickets = async (req, res, next) => {
       return next(new Error("User not found"));
     }
 
-    // Assuming Ticket.findByUserId uses the correct MSSQL query
     const tickets = await Ticket.findByUserId(req.user.id);
 
     res.status(200).json(tickets);
@@ -21,11 +49,6 @@ const getTickets = async (req, res, next) => {
   }
 };
 
-/**
- * @desc Get single ticket for authenticated user
- * @route GET /api/tickets/:id
- * @access Private
- */
 const getTicket = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
@@ -40,11 +63,9 @@ const getTicket = async (req, res, next) => {
       return next(new Error("Ticket not found"));
     }
 
-    // Authorize only the ticket creator or an admin to view this ticket
-    // Ensure consistent type comparison for IDs (e.g., convert to string if one is a GUID object)
     if (
       ticket.userId.toString() !== req.user.id.toString() &&
-      !req.user.isAdmin
+      req.user.role !== "admin"
     ) {
       res.status(401);
       return next(new Error("User not authorized to view this ticket"));
@@ -57,22 +78,13 @@ const getTicket = async (req, res, next) => {
   }
 };
 
-/**
- * @desc Get any single ticket for admin, including associated user details
- * @route GET /api/tickets/admin/:id
- * @access Private/Admin
- */
 const getSingleTicketForAdmin = async (req, res, next) => {
   try {
-    // This controller assumes `authorizeRoles(['admin'])` middleware
-    // has already verified the user's role.
-    // A direct role check here is a redundant but safe fallback:
     if (!req.user || req.user.role !== "admin") {
       res.status(403);
       return next(new Error("Access forbidden. Admin role required."));
     }
 
-    // Use the new model method that fetches ticket with joined user details
     const ticket = await Ticket.findByIdWithUserDetails(req.params.id);
 
     if (!ticket) {
@@ -83,16 +95,10 @@ const getSingleTicketForAdmin = async (req, res, next) => {
     res.status(200).json(ticket);
   } catch (error) {
     console.error("Error getting single ticket for admin:", error);
-    // Pass the error to the next middleware (error handler)
     return next(error);
   }
 };
 
-/**
- * @desc Create a new ticket
- * @route POST /api/tickets
- * @access Private
- */
 const createTicket = async (req, res, next) => {
   const {
     description,
@@ -100,11 +106,14 @@ const createTicket = async (req, res, next) => {
     subCategory,
     startDate,
     endDate,
-    service, // Maps to ServiceType in DB
+    service,
     category,
   } = req.body;
 
-  // Basic validation for required fields
+  const attachmentBuffer = req.file ? req.file.buffer : null;
+  const attachmentMimeType = req.file ? req.file.mimetype : null;
+  const attachmentFileName = req.file ? req.file.originalname : null;
+
   if (
     !description ||
     !priority ||
@@ -125,7 +134,6 @@ const createTicket = async (req, res, next) => {
       return next(new Error("User not found"));
     }
 
-    // Determine ticket ID prefix based on service type
     let ticketIdPrefix;
     if (service === "Service Request") {
       ticketIdPrefix = `SR`;
@@ -138,32 +146,39 @@ const createTicket = async (req, res, next) => {
       );
     }
 
-    // Pass 'user' (which is req.user.id) directly to the TicketModel create method
     const ticket = await Ticket.create({
       ticketIdPrefix,
       priority,
       subCategory,
       description,
-      user: req.user.id, // Ensure this is the userId (GUID) from the authenticated user
+      user: req.user.id,
       status: "new",
       startDate,
       endDate,
       service,
       category,
+      attachmentBuffer,
+      attachmentMimeType,
+      attachmentFileName,
     });
 
     res.status(201).json(ticket);
   } catch (error) {
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        res.status(400);
+        return next(new Error("File size too large. Maximum 5MB allowed."));
+      }
+    } else if (error.message.includes("Unsupported file type")) {
+      res.status(400);
+      return next(error);
+    }
+
     console.error("Error creating ticket:", error);
     return next(error);
   }
 };
 
-/**
- * @desc Update ticket
- * @route PUT /api/tickets/:id
- * @access Private
- */
 const updateTicket = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
@@ -178,35 +193,46 @@ const updateTicket = async (req, res, next) => {
       return next(new Error("Ticket not found"));
     }
 
-    // Authorize only the ticket creator or an admin to update this ticket
     if (
       ticket.userId.toString() !== req.user.id.toString() &&
-      !req.user.isAdmin
+      req.user.role !== "admin"
     ) {
       res.status(401);
       return next(new Error("Not authorized to update this ticket"));
     }
 
-    // Call the TicketModel's update method
-    const updatedTicket = await Ticket.update(req.params.id, req.body);
+    const fieldsToUpdate = { ...req.body };
+
+    if (req.file) {
+      fieldsToUpdate.attachmentBuffer = req.file.buffer;
+      fieldsToUpdate.attachmentMimeType = req.file.mimetype;
+      fieldsToUpdate.attachmentFileName = req.file.originalname;
+    }
+
+    const updatedTicket = await Ticket.update(req.params.id, fieldsToUpdate);
 
     if (!updatedTicket) {
-      res.status(500); // Or 404 if the update didn't find the ticket
+      res.status(500);
       return next(new Error("Failed to update ticket."));
     }
 
     res.status(200).json(updatedTicket);
   } catch (error) {
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        res.status(400);
+        return next(new Error("File size too large. Maximum 5MB allowed."));
+      }
+    } else if (error.message.includes("Unsupported file type")) {
+      res.status(400);
+      return next(error);
+    }
+
     console.error("Error updating ticket:", error);
     return next(error);
   }
 };
 
-/**
- * @desc Delete ticket
- * @route DELETE /api/tickets/:id
- * @access Private
- */
 const deleteTicket = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
@@ -215,32 +241,35 @@ const deleteTicket = async (req, res, next) => {
       return next(new Error("User not authorized"));
     }
 
-    const ticket = await Ticket.findById(req.params.id);
+    const ticketIdToDelete = req.params.id;
+
+    const ticket = await Ticket.findById(ticketIdToDelete);
+
     if (!ticket) {
       res.status(404);
-      return next(new Error("Ticket not found"));
+      return next(new Error(`Ticket with ID '${ticketIdToDelete}' not found.`));
     }
 
-    // Authorize only the ticket creator or an admin to delete this ticket
     if (
       ticket.userId.toString() !== req.user.id.toString() &&
-      !req.user.isAdmin
+      req.user.role !== "admin"
     ) {
       res.status(401);
       return next(new Error("Not authorized to delete this ticket"));
     }
 
-    // Call the TicketModel's delete method
-    const deleted = await Ticket.delete(req.params.id);
+    const deleted = await Ticket.delete(ticketIdToDelete);
 
     if (!deleted) {
-      res.status(500); // Or 404 if the delete didn't find the ticket
-      return next(new Error("Failed to delete ticket."));
+      res.status(500);
+      return next(
+        new Error(`Failed to delete ticket with ID '${ticketIdToDelete}'.`)
+      );
     }
 
     res.status(200).json({
       success: true,
-      message: `Ticket ${req.params.id} deleted successfully.`,
+      message: `Ticket '${ticketIdToDelete}' deleted successfully.`,
     });
   } catch (error) {
     console.error("Error deleting ticket:", error);
@@ -248,22 +277,13 @@ const deleteTicket = async (req, res, next) => {
   }
 };
 
-/**
- * @desc Get all tickets for admin view, including user details
- * @route GET /api/tickets/admin
- * @access Private/Admin
- */
 const getAllTicketsForAdmin = async (req, res, next) => {
   try {
-    // This controller assumes `authorizeRoles(['admin'])` middleware
-    // has already verified the user's role.
-    // A direct role check here is a redundant but safe fallback:
     if (!req.user || !req.user.role || req.user.role !== "admin") {
       res.status(403);
       return next(new Error("Access forbidden. Admin role required."));
     }
 
-    // Fetch all tickets using the new model method that joins with user details
     const tickets = await Ticket.findAllWithUserDetails();
 
     res.status(200).json(tickets);
@@ -275,10 +295,11 @@ const getAllTicketsForAdmin = async (req, res, next) => {
 
 module.exports = {
   getTickets,
-  getTicket, // User's specific ticket view
-  getSingleTicketForAdmin, // NEW: Admin's specific ticket view (any ticket)
+  getTicket,
+  getSingleTicketForAdmin,
   createTicket,
   updateTicket,
   deleteTicket,
-  getAllTicketsForAdmin, // Admin's view of all tickets
+  getAllTicketsForAdmin,
+  upload,
 };
