@@ -33,9 +33,9 @@ function Login() {
       }
       toast.success(`Logged in as ${user?.name || user?.email}`);
       if (user.role === "admin") {
-        navigate("/admin-dashboard"); 
+        navigate("/admin-dashboard");
       } else {
-        navigate("/"); 
+        navigate("/");
       }
     }
 
