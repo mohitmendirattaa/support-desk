@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from "react"; // Import useState
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getTickets } from "../features/tickets/ticketSlice";
 import Spinner from "../components/Spinner";
 import BackButton from "../components/BackButton";
 import TicketItem from "../components/TicketItem";
+import { useLocation } from "react-router-dom"; // <--- IMPORT useLocation
 
 function Tickets() {
   const { tickets, isLoading, isError, message } = useSelector(
     (state) => state.tickets
   );
   const dispatch = useDispatch();
+  const location = useLocation(); // <--- INITIALIZE useLocation
 
   // State for pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,6 +73,13 @@ function Tickets() {
     );
   }
 
+  // <--- DETERMINE THE BASE PATH HERE
+  // If the URL starts with /admin-dashboard, the basePath should be /admin-dashboard/tickets
+  // Otherwise, it's just /tickets (for the regular user view)
+  const basePath = location.pathname.startsWith("/admin-dashboard")
+    ? "/admin-dashboard/tickets"
+    : "/tickets";
+
   return (
     <>
       <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 bg-gray-50">
@@ -98,7 +107,12 @@ function Tickets() {
 
           <div className="divide-y divide-gray-100">
             {currentTickets.map((ticket) => (
-              <TicketItem ticket={ticket} key={ticket.id} />
+              // <--- PASS THE basePath TO TicketItem HERE
+              <TicketItem
+                ticket={ticket}
+                key={ticket._id}
+                basePath={basePath}
+              />
             ))}
           </div>
         </div>

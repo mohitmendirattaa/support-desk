@@ -1,16 +1,13 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   getSingleTicketAsAdmin,
   reset,
-  closeTicket,
-} from "../features/tickets/ticketSlice"; // closeTicket imported
-import {
-  getNotes, // Import getNotes action
-  reset as resetNotes, // Import reset for notes slice
-} from "../features/notes/noteSlice"; // Import note actions and reset
+  updateTicketStatus, // Correctly importing updateTicketStatus
+} from "../features/tickets/ticketSlice";
+import { getNotes, reset as resetNotes } from "../features/notes/noteSlice";
 import Spinner from "../components/Spinner";
 import BackButton from "../components/BackButton";
 import {
@@ -22,15 +19,15 @@ import {
   FaFilePdf,
   FaFileWord,
   FaFileAlt,
-  FaUserCircle, // For user avatar in notes
-  FaIdBadge, // For staff avatar in notes
+  FaUserCircle,
+  FaIdBadge,
+  FaChevronDown,
 } from "react-icons/fa";
 
 function ViewSingleTicket() {
   const { ticket, isLoading, isError, message } = useSelector(
     (state) => state.tickets
   );
-  // Get notes state from the Redux store
   const {
     notes,
     isLoading: isLoadingNotes,
@@ -43,25 +40,29 @@ function ViewSingleTicket() {
   const { ticketId } = useParams();
   const navigate = useNavigate();
 
-  // Returns Tailwind CSS classes based on ticket status
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const getStatusClasses = (status) => {
     switch (status) {
-      case "new":
-        return "bg-blue-200 text-blue-800";
       case "open":
+        return "bg-blue-200 text-blue-800";
+      case "new":
         return "bg-green-200 text-green-800";
       case "closed":
         return "bg-red-200 text-red-800";
-      case "reopened": // Added for completeness if you use it for admin view
+      case "reopened":
         return "bg-purple-200 text-purple-800";
       case "pending":
         return "bg-yellow-200 text-yellow-800";
+      case "hold":
+        return "bg-orange-200 text-orange-800";
+      case "resolved":
+        return "bg-teal-200 text-teal-800"; // This is already defined correctly
       default:
         return "bg-gray-200 text-gray-800";
     }
   };
 
-  // Returns Tailwind CSS classes based on ticket priority
   const getPriorityClasses = (priority) => {
     switch (priority) {
       case "High":
@@ -75,31 +76,28 @@ function ViewSingleTicket() {
     }
   };
 
-  // Effect hook to fetch ticket details and handle authorization
   useEffect(() => {
     if (isError) {
       toast.error(message);
     }
     if (isErrorNotes) {
-      toast.error(notesMessage); // Handle errors specific to notes
+      toast.error(notesMessage);
     }
 
     if (!user) {
-      navigate("/login"); // Redirect if no user is logged in
+      navigate("/login");
     } else if (user.role !== "admin") {
       toast.error("You are not authorized to view this page.");
-      navigate("/admin-dashboard"); // Redirect if user is not an admin
+      navigate("/admin-dashboard"); // Assuming this is the correct redirect for non-admins
     } else {
-      // Fetch ticket for admin view
       dispatch(getSingleTicketAsAdmin(ticketId));
-      // Fetch notes for the ticket
       dispatch(getNotes(ticketId));
     }
 
-    // Cleanup function: reset ticket and notes state when component unmounts
+    // Cleanup function
     return () => {
       dispatch(reset());
-      dispatch(resetNotes()); // Reset notes state too
+      dispatch(resetNotes());
     };
   }, [
     ticketId,
@@ -112,13 +110,11 @@ function ViewSingleTicket() {
     notesMessage,
   ]);
 
-  // Display spinner while loading
   if (isLoading || isLoadingNotes) {
-    // Check for notes loading too
     return <Spinner />;
   }
 
-  // Display error message if loading fails or ticket data is missing
+  // Handle case where ticket data is not loaded or invalid
   if (isError || !ticket || !ticket.id) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] bg-red-50 text-red-700 p-8 rounded-lg shadow-md mx-auto max-w-lg mt-10">
@@ -135,25 +131,30 @@ function ViewSingleTicket() {
     );
   }
 
-  // Handler for the "Edit Ticket" button
   const handleEditClick = () => {
     toast.info("Edit functionality is under construction. Stay tuned!");
   };
 
-  // Handler for closing a ticket
-  const onTicketClose = () => {
-    dispatch(closeTicket(ticketId))
-      .unwrap()
+  const handleStatusUpdate = (newStatus) => {
+    setIsDropdownOpen(false); // Close dropdown immediately
+
+    dispatch(updateTicketStatus({ ticketId, newStatus }))
+      .unwrap() // Use unwrap() to handle fulfilled or rejected promises
       .then(() => {
-        toast.success("Ticket Closed Successfully!");
-        navigate("/admin-dashboard/tickets"); // Redirect back to admin tickets list
+        toast.success(`Ticket status updated to "${newStatus}"!`);
+        // If status becomes closed or resolved, navigate to tickets list
+        if (newStatus === "closed" || newStatus === "resolved") {
+          navigate("/admin-dashboard/tickets");
+        }
       })
       .catch((error) => {
-        toast.error(error.message || "Failed to close ticket.");
+        // Display error message from backend or a generic one
+        toast.error(
+          error.message || `Failed to update ticket to ${newStatus}.`
+        );
       });
   };
 
-  // Formats a date string into a localized date format
   const formatDate = (dateString) => {
     return dateString
       ? new Date(dateString).toLocaleDateString("en-IN", {
@@ -164,7 +165,6 @@ function ViewSingleTicket() {
       : "N/A";
   };
 
-  // Formats a date string into a localized date and time format
   const formatDateTime = (dateString) => {
     return dateString
       ? new Date(dateString).toLocaleString("en-IN", {
@@ -178,20 +178,16 @@ function ViewSingleTicket() {
       : "N/A";
   };
 
-  // Function to render the attachment section based on ticket data
   const renderAttachment = () => {
     const { attachment, attachmentMimeType, attachmentFileName } = ticket;
 
-    // Check if all attachment details are present
     if (attachment && attachmentMimeType && attachmentFileName) {
-      // Create a data URL from the Base64 attachment data and MIME type
       const dataUrl = `data:${attachmentMimeType};base64,${attachment}`;
 
-      // Determine the appropriate file icon based on MIME type
       const isPdf = attachmentMimeType === "application/pdf";
       const isWord =
         attachmentMimeType.includes("wordprocessingml") ||
-        attachmentMimeType === "application/msword";
+        attachmentMimeType === "application/msword"; // More robust check for Word
 
       return (
         <div className="mt-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
@@ -199,9 +195,9 @@ function ViewSingleTicket() {
             <FaPaperclip className="text-blue-600" /> Attached File:
             <a
               href={dataUrl}
-              download={attachmentFileName} // This attribute forces download
-              target="_blank" // Opens the file in a new tab
-              rel="noopener noreferrer" // Security best practice
+              download={attachmentFileName}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-blue-600 hover:underline flex items-center ml-2"
             >
               {isPdf && <FaFilePdf className="mr-1" />}
@@ -216,7 +212,7 @@ function ViewSingleTicket() {
         </div>
       );
     } else if (attachment) {
-      // Fallback if attachment data exists but metadata (MIME type/filename) is missing
+      // Fallback for cases where MIME type or filename is missing but attachment data exists
       return (
         <div className="mt-4 p-4 bg-yellow-100 rounded-lg border border-yellow-200 text-yellow-800">
           <p className="font-semibold flex items-center gap-2">
@@ -225,8 +221,8 @@ function ViewSingleTicket() {
           </p>
           <p className="text-sm mt-1">
             <a
-              href={`data:application/octet-stream;base64,${attachment}`}
-              download="attachment"
+              href={`data:application/octet-stream;base64,${attachment}`} // Generic binary stream
+              download="attachment_unknown_type" // Provide a generic download name
               className="text-blue-600 hover:underline flex items-center"
             >
               <FaFileAlt className="mr-1" /> Download Generic File
@@ -235,7 +231,6 @@ function ViewSingleTicket() {
         </div>
       );
     }
-    // Message displayed when no attachment is available for the ticket
     return (
       <div className="text-gray-500 italic bg-gray-50 p-6 rounded-lg border border-gray-200">
         No attachment for this ticket.
@@ -243,19 +238,23 @@ function ViewSingleTicket() {
     );
   };
 
+  // Determine if the ticket is in a final, non-editable state
+  const isTicketClosed = ticket.status === "closed";
+  const isTicketResolved = ticket.status === "resolved";
+
   return (
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 bg-gray-50 pb-24">
-      {/* Page Header */}
       <header className="flex justify-between items-center mb-8">
         <BackButton url="/admin-dashboard/tickets" />
         <h1 className="text-4xl font-extrabold text-blue-800 tracking-tight text-center flex-grow">
           {ticket.service || "Support"} Ticket
         </h1>
+        {/* Placeholder for symmetry, adjust as needed */}
         <div className="w-auto opacity-0">
-          <BackButton /> {/* Invisible back button for spacing symmetry */}
+          <BackButton />
         </div>
       </header>
-      {/* Ticket ID, Status, and Submission Date */}
+
       <header className="container mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div className="flex-grow text-center md:text-left">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-blue-800 tracking-tight flex flex-col md:flex-row items-center justify-center md:justify-start gap-4 flex-wrap">
@@ -275,7 +274,6 @@ function ViewSingleTicket() {
           </p>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex gap-4 mt-6 md:mt-0 flex-wrap justify-center md:justify-end w-full md:w-auto">
           <button
             onClick={handleEditClick}
@@ -283,20 +281,76 @@ function ViewSingleTicket() {
           >
             <FaPencilAlt /> Edit Ticket
           </button>
-          {/* Close Ticket button, conditionally rendered if not already closed */}
-          {ticket.status !== "closed" && (
+
+          <div className="relative">
             <button
-              onClick={onTicketClose}
-              className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition-colors"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-colors"
             >
-              <FaTimesCircle /> Close Ticket
+              Update Status <FaChevronDown className="ml-2" />
             </button>
-          )}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                {/* Status Update Options */}
+                {/* Option to change to 'hold' */}
+                {ticket.status !== "hold" &&
+                  !isTicketClosed &&
+                  !isTicketResolved && (
+                    <button
+                      onClick={() => handleStatusUpdate("hold")}
+                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    >
+                      Hold
+                    </button>
+                  )}
+                {/* Option to change to 'pending' */}
+                {ticket.status !== "pending" &&
+                  !isTicketClosed &&
+                  !isTicketResolved && (
+                    <button
+                      onClick={() => handleStatusUpdate("pending")}
+                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    >
+                      Pending
+                    </button>
+                  )}
+                {/* Option to change to 'resolved' */}
+                {/* Show "Resolve" if not already resolved or closed */}
+                {!isTicketResolved && !isTicketClosed && (
+                  <button
+                    onClick={() => handleStatusUpdate("resolved")}
+                    className="block w-full text-left px-4 py-2 text-teal-700 hover:bg-teal-50" // Teal color for Resolve
+                  >
+                    Resolve
+                  </button>
+                )}
+                {/* Option to change to 'closed' */}
+                {/* Show "Close" if not already closed */}
+                {!isTicketClosed && (
+                  <button
+                    onClick={() => handleStatusUpdate("closed")}
+                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50"
+                  >
+                    Close
+                  </button>
+                )}
+                {/* Option to change to 'reopened' */}
+                {/* Show "Reopen" ONLY if current status is "closed" */}
+                {ticket.status === "closed" && (
+                  <button
+                    onClick={() => handleStatusUpdate("reopened")}
+                    className="block w-full text-left px-4 py-2 text-purple-600 hover:bg-purple-50"
+                  >
+                    Reopen
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </header>
-      {/* Main Content Grid */}
+
       <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* User Information Section */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
           <h2 className="text-2xl font-bold text-blue-700 mb-6 pb-4 border-b border-gray-200">
             <FaInfoCircle className="inline-block mr-3 text-blue-700" />
@@ -313,7 +367,6 @@ function ViewSingleTicket() {
           </div>
         </div>
 
-        {/* Issue Overview Section */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
           <h2 className="text-2xl font-bold text-blue-700 mb-6 pb-4 border-b border-gray-200">
             <FaInfoCircle className="inline-block mr-3 text-blue-700" />
@@ -343,7 +396,6 @@ function ViewSingleTicket() {
           </div>
         </div>
 
-        {/* Detailed Description Section (Full width) */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 flex flex-col lg:col-span-2">
           <h2 className="text-2xl font-bold text-blue-700 mt-0 mb-6 pb-4 border-b border-gray-200">
             <FaPencilAlt className="inline-block mr-3 text-blue-700" />
@@ -353,7 +405,6 @@ function ViewSingleTicket() {
             <p>{ticket.description || "No description provided."}</p>
           </div>
 
-          {/* Attachments Section */}
           <h2 className="text-2xl font-bold text-blue-700 mt-8 mb-6 pb-4 border-b border-gray-200">
             <FaPaperclip className="inline-block mr-3 text-blue-700" />
             Attachments
@@ -361,14 +412,13 @@ function ViewSingleTicket() {
           {renderAttachment()}
         </div>
       </div>
-      {/* --- Notes Section --- */}
+
       <div className="mt-9 bg-white rounded-xl shadow-lg border border-gray-100 p-8">
         <h2 className="text-2xl font-bold text-blue-700 mb-6 pb-4 border-b border-gray-200">
           <FaInfoCircle className="inline-block mr-3 text-blue-700" />
           Ticket Notes
         </h2>
 
-        {/* Display Notes */}
         {notes.length > 0 ? (
           <div className="space-y-6">
             {notes.map((note) => (
@@ -415,7 +465,6 @@ function ViewSingleTicket() {
   );
 }
 
-// Reusable component for displaying a detail item (label and value)
 const DetailItem = ({
   label,
   value,

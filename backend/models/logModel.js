@@ -4,12 +4,7 @@ const sql = require("mssql");
 const getSqlPool = require("../config/db").getSqlPool;
 
 class Log {
-  /**
-   * @desc Creates a new log entry in the database.
-   * @param {string} userId - The ID of the user performing the action (GUID format).
-   * @param {string} action - The action performed (e.g., 'Login', 'Logout').
-   * @returns {Promise<boolean>} True if the log entry was created successfully, false otherwise.
-   */
+
   static async createLogEntry(userId, action) {
     if (!userId || typeof userId !== "string") {
       console.error("LogModel: Invalid User ID provided for log entry.");
@@ -30,7 +25,6 @@ class Log {
 
       const request = pool.request();
 
-      // Only add parameters for UserID and Action
       request.input("userId", sql.UniqueIdentifier, userId);
       request.input("action", sql.NVarChar(50), action);
 

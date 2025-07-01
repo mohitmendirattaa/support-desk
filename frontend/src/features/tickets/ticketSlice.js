@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import ticketService from "./ticketService"; // Ensure this path is correct and ticketService has `deleteTicket`
+import ticketService from "./ticketService";
 
-// Helper function to extract error message
 const getErrorMessage = (error) => {
   return (
     (error.response && error.response.data && error.response.data.message) ||
@@ -19,79 +18,75 @@ const initialState = {
   message: "",
 };
 
-// Async Thunks
-export const createTicket = createAsyncThunk(
+// Async Thunks - Removed 'export' from individual thunk definitions
+const createTicket = createAsyncThunk(
   "ticket/create",
   async (ticketData, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token;
       return await ticketService.createTicket(ticketData, token);
     } catch (error) {
-      const message = getErrorMessage(error); // Using the helper
+      const message = getErrorMessage(error);
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-export const getTickets = createAsyncThunk(
-  "tickets/getAll",
-  async (_, thunkAPI) => {
-    try {
-      const token = thunkAPI.getState().auth.user.token;
-      return await ticketService.getTickets(token);
-    } catch (error) {
-      const message = getErrorMessage(error); // Using the helper
-      return thunkAPI.rejectWithValue(message);
-    }
+const getTickets = createAsyncThunk("tickets/getAll", async (_, thunkAPI) => {
+  try {
+    const token = thunkAPI.getState().auth.user.token;
+    return await ticketService.getTickets(token);
+  } catch (error) {
+    const message = getErrorMessage(error);
+    return thunkAPI.rejectWithValue(message);
   }
-);
+});
 
-export const getTicket = createAsyncThunk(
+const getTicket = createAsyncThunk(
   "tickets/get",
   async (ticketId, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token;
       return await ticketService.getTicket(ticketId, token);
     } catch (error) {
-      const message = getErrorMessage(error); // Using the helper
+      const message = getErrorMessage(error);
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-export const getSingleTicketAsAdmin = createAsyncThunk(
+const getSingleTicketAsAdmin = createAsyncThunk(
   "tickets/getSingleAsAdmin",
   async (ticketId, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token;
       return await ticketService.getSingleTicketAsAdmin(ticketId, token);
     } catch (error) {
-      const message = getErrorMessage(error); // Using the helper
+      const message = getErrorMessage(error);
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-export const closeTicket = createAsyncThunk(
-  "ticket/close",
-  async (ticketId, thunkAPI) => {
+const updateTicketStatus = createAsyncThunk(
+  "ticket/updateStatus",
+  async ({ ticketId, newStatus }, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token;
-      return await ticketService.closeTicket(ticketId, token);
+      return await ticketService.updateTicketStatus(ticketId, newStatus, token);
     } catch (error) {
-      const message = getErrorMessage(error); // Using the helper
+      const message = getErrorMessage(error);
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-export const getAllTicketsForAdmin = createAsyncThunk(
+const getAllTicketsForAdmin = createAsyncThunk(
   "tickets/getAllForAdmin",
   async (_, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token;
       const user = thunkAPI.getState().auth.user;
-      // Client-side role check for an extra layer of security and UX
       if (!user || user.role !== "admin") {
         return thunkAPI.rejectWithValue(
           "Not authorized to view all tickets. Admin access required."
@@ -99,23 +94,21 @@ export const getAllTicketsForAdmin = createAsyncThunk(
       }
       return await ticketService.getAllTicketsForAdmin(token);
     } catch (error) {
-      const message = getErrorMessage(error); // Using the helper
+      const message = getErrorMessage(error);
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-// New Thunk for deleting a ticket
-export const deleteTicket = createAsyncThunk(
+const deleteTicket = createAsyncThunk(
   "ticket/delete",
   async (ticketId, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token;
-      // Assuming your ticketService.deleteTicket function exists and works
       await ticketService.deleteTicket(ticketId, token);
-      return ticketId; // Return the ID of the deleted ticket for state update
+      return ticketId;
     } catch (error) {
-      const message = getErrorMessage(error); // Using the helper
+      const message = getErrorMessage(error);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -125,15 +118,12 @@ export const ticketSlice = createSlice({
   name: "ticket",
   initialState,
   reducers: {
-    // Reset function
     reset: (state) => {
-      // It's safer to reset to the initial state completely for clarity
       Object.assign(state, initialState);
     },
   },
   extraReducers: (builder) => {
     builder
-      // createTicket cases
       .addCase(createTicket.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
@@ -144,8 +134,6 @@ export const ticketSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.message = "Ticket created successfully!";
-        // You might want to add the new ticket to the tickets array if desired
-        // state.tickets.push(action.payload);
       })
       .addCase(createTicket.rejected, (state, action) => {
         state.isLoading = false;
@@ -153,14 +141,13 @@ export const ticketSlice = createSlice({
         state.message = action.payload;
         state.isSuccess = false;
       })
-      // getTickets cases (for user's own tickets)
       .addCase(getTickets.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
         state.isSuccess = false;
         state.message = "";
-        state.tickets = []; // Clear previous tickets
-        state.ticket = {}; // Clear single ticket
+        state.tickets = [];
+        state.ticket = {};
       })
       .addCase(getTickets.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -175,13 +162,12 @@ export const ticketSlice = createSlice({
         state.isSuccess = false;
         state.tickets = [];
       })
-      // getTicket cases (for user's single ticket)
       .addCase(getTicket.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
         state.isSuccess = false;
         state.message = "";
-        state.ticket = {}; // Clear previous single ticket
+        state.ticket = {};
       })
       .addCase(getTicket.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -196,7 +182,6 @@ export const ticketSlice = createSlice({
         state.isSuccess = false;
         state.ticket = {};
       })
-      // getSingleTicketAsAdmin cases
       .addCase(getSingleTicketAsAdmin.pending, (state) => {
         state.isLoading = true;
       })
@@ -209,44 +194,42 @@ export const ticketSlice = createSlice({
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        state.ticket = null; // Set to null if not found or error
+        state.ticket = null;
       })
-      // closeTicket cases
-      .addCase(closeTicket.pending, (state) => {
+      .addCase(updateTicketStatus.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
         state.isSuccess = false;
         state.message = "";
       })
-      .addCase(closeTicket.fulfilled, (state, action) => {
+      .addCase(updateTicketStatus.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.message = "Ticket closed successfully!";
-        // Update the status of the closed ticket in the 'tickets' array
+        state.message = `Ticket status updated to '${action.payload.status}' successfully!`;
+
         state.tickets = state.tickets.map((ticket) =>
           ticket.id === action.payload.id
-            ? { ...ticket, status: "closed" }
+            ? { ...ticket, status: action.payload.status }
             : ticket
         );
-        // Also update the single 'ticket' if it's the one being closed
         if (state.ticket && state.ticket.id === action.payload.id) {
-          state.ticket.status = "closed";
+          state.ticket.status = action.payload.status;
+          state.ticket.updatedAt = action.payload.updatedAt;
         }
       })
-      .addCase(closeTicket.rejected, (state, action) => {
+      .addCase(updateTicketStatus.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
         state.isSuccess = false;
       })
-      // getAllTicketsForAdmin cases
       .addCase(getAllTicketsForAdmin.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
         state.isSuccess = false;
         state.message = "";
-        state.tickets = []; // Clear previous tickets
-        state.ticket = {}; // Clear single ticket
+        state.tickets = [];
+        state.ticket = {};
       })
       .addCase(getAllTicketsForAdmin.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -261,7 +244,6 @@ export const ticketSlice = createSlice({
         state.isSuccess = false;
         state.tickets = [];
       })
-      // deleteTicket cases (NEWLY ADDED)
       .addCase(deleteTicket.pending, (state) => {
         state.isLoading = true;
         state.isSuccess = false;
@@ -272,8 +254,6 @@ export const ticketSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.message = `Ticket ${action.payload} deleted successfully!`;
-        // Filter out the deleted ticket from the tickets array
-        // Changed `ticket._id` to `ticket.id` to match MS SQL Server's primary key name
         state.tickets = state.tickets.filter(
           (ticket) => ticket.id !== action.payload
         );
@@ -288,4 +268,16 @@ export const ticketSlice = createSlice({
 });
 
 export const { reset } = ticketSlice.actions;
+
+// Export all async thunks and the reducer in a single statement
+export {
+  createTicket,
+  getTickets,
+  getTicket,
+  getSingleTicketAsAdmin,
+  updateTicketStatus,
+  getAllTicketsForAdmin,
+  deleteTicket,
+};
+
 export default ticketSlice.reducer;

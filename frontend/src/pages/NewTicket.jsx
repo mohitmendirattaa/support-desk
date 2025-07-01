@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 import { createTicket } from "../features/tickets/ticketSlice";
 import BackButton from "../components/BackButton";
 import { FaUser } from "react-icons/fa";
@@ -35,8 +35,9 @@ function NewTicket() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const locationHook = useLocation(); // <--- Initialize useLocation
 
-  // Get today's date inYYYY-MM-DD format for the min attribute of the date input
+  // Get today's date in YYYY-MM-DD format for the min attribute of the date input
   const today = new Date().toISOString().split("T")[0];
 
   // Lottie animation default options
@@ -98,6 +99,14 @@ function NewTicket() {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
       ];
       if (allowedTypes.includes(file.type)) {
+        // Optional: Add file size validation (e.g., 5MB limit)
+        const maxSize = 5 * 1024 * 1024; // 5 MB
+        if (file.size > maxSize) {
+          toast.error("File size exceeds 5MB limit.");
+          setSelectedFile(null);
+          e.target.value = null; // Clear the input field
+          return;
+        }
         setSelectedFile(file);
       } else {
         toast.error(
@@ -148,7 +157,12 @@ function NewTicket() {
       .unwrap()
       .then(() => {
         toast.success("New ticket created successfully!");
-        navigate("/tickets");
+        // --- CONDITIONAL REDIRECTION LOGIC ---
+        if (locationHook.pathname.startsWith("/admin-dashboard")) {
+          navigate("/admin-dashboard/tickets"); // Redirect to admin tickets page
+        } else {
+          navigate("/tickets"); // Redirect to regular user tickets page
+        }
       })
       .catch((error) => {
         toast.error(error.message || "Failed to create ticket.");
@@ -415,11 +429,11 @@ function NewTicket() {
               <button
                 type="submit"
                 className="w-full flex items-center justify-center px-6 py-4
-                                     bg-gradient-to-r from-blue-600 to-indigo-700 text-white
-                                     font-semibold text-lg rounded-xl shadow-lg
-                                     hover:from-blue-700 hover:to-indigo-800
-                                     transform hover:-translate-y-1 transition duration-300 ease-in-out
-                                     focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"
+                                       bg-gradient-to-r from-blue-600 to-indigo-700 text-white
+                                       font-semibold text-lg rounded-xl shadow-lg
+                                       hover:from-blue-700 hover:to-indigo-800
+                                       transform hover:-translate-y-1 transition duration-300 ease-in-out
+                                       focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"
               >
                 Submit Ticket
               </button>

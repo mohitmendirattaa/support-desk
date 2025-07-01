@@ -1,6 +1,7 @@
+// backend/controllers/noteController.js
 const User = require("../models/userModel");
 const Ticket = require("../models/ticketModel");
-const Note = require("../models/noteModel"); // Import the Note Model
+const Note = require("../models/noteModel");
 
 // @desc    Get notes for a ticket
 // @route   GET /api/tickets/:ticketId/notes
@@ -29,7 +30,6 @@ const getNotes = async (req, res, next) => {
       );
     }
 
-    // NoteModel.findByTicketId now handles joining with Users to get userName
     const notes = await Note.findByTicketId(req.params.ticketId);
 
     res.status(200).json(notes);
@@ -73,11 +73,10 @@ const addNote = async (req, res, next) => {
 
     const isStaff = req.user.role === "admin";
 
-    // Pass the user's name from req.user to the Note.create function
     const note = await Note.create({
       ticketId: req.params.ticketId,
       userId: req.user.id,
-      userName: user.name, // Pass the user's name here
+      userName: user.name,
       text,
       isStaff,
     });
@@ -90,7 +89,7 @@ const addNote = async (req, res, next) => {
 };
 
 // @desc    Reopen a ticket and add a note
-// @route   PUT /api/tickets/:ticketId/reopen
+// @route   PATCH /api/tickets/:id/reopen
 // @access  Private (Admin or Ticket Owner)
 const reopenTicket = async (req, res, next) => {
   const { reopenReason } = req.body;
@@ -113,23 +112,29 @@ const reopenTicket = async (req, res, next) => {
       return next(new Error("Ticket not found"));
     }
 
+    // Authorization check: Allow admin OR the ticket owner
     if (
-      ticket.userId.toString() !== req.user.id.toString() &&
-      req.user.role !== "admin"
+      req.user.role !== "admin" &&
+      !(
+        ticket.userId &&
+        req.user.id &&
+        ticket.userId.toString() === req.user.id.toString()
+      )
     ) {
-      res.status(401);
-      return next(new Error("User not authorized to reopen this ticket"));
-    }
-
-    if (
-      ticket.status === "open" ||
-      ticket.status === "new" ||
-      ticket.status === "reopened"
-    ) {
-      res.status(400);
+      res.status(403);
       return next(
         new Error(
-          "Ticket cannot be reopened as it is already open, new, or already reopened."
+          "Access forbidden. You are not authorized to reopen this ticket."
+        )
+      );
+    }
+
+    // Only allow reopening if the current status is 'closed' or 'resolved'
+    if (ticket.status !== "closed" && ticket.status !== "resolved") {
+      res.status(400); // <-- This sends a 400 Bad Request
+      return next(
+        new Error(
+          `Ticket cannot be reopened from status: ${ticket.status}. It must be closed or resolved.`
         )
       );
     }
@@ -148,11 +153,10 @@ const reopenTicket = async (req, res, next) => {
       isStaff ? "Staff" : "User"
     }) with reason: "${reopenReason}"`;
 
-    // Pass the user's name from req.user to the Note.create function
     const newNote = await Note.create({
       ticketId: req.params.id,
       userId: req.user.id,
-      userName: user.name, // Pass the user's name here
+      userName: user.name,
       text: reopeningNoteText,
       isStaff: isStaff,
     });
@@ -163,7 +167,7 @@ const reopenTicket = async (req, res, next) => {
       message: "Ticket successfully reopened and note added.",
     });
   } catch (error) {
-    console.error("Error reopening ticket:", error);
+    console.error("Error reopening ticket (NoteController):", error);
     return next(error);
   }
 };

@@ -1,5 +1,4 @@
-// This file remains the same as previously provided
-// backend/services/noteService.js
+// frontend/src/services/noteService.js
 import axios from "axios";
 
 const API_URL = "http://localhost:5000/api/tickets/"; // Base URL for tickets, notes will be nested under it
@@ -34,8 +33,7 @@ const createNote = async (ticketId, noteText, token) => {
   return response.data;
 };
 
-// Reopen a ticket (this is actually part of ticket actions, but we put it in noteController)
-// For consistency, let's also define it here as it uses the same API structure
+// Reopen a ticket (keeping it here as per your request)
 const reopenTicket = async (ticketId, reopenReason, token) => {
   const config = {
     headers: {
@@ -43,8 +41,9 @@ const reopenTicket = async (ticketId, reopenReason, token) => {
     },
   };
 
-  // Note: The API endpoint for reopen is /api/tickets/:ticketId/reopen
-  const response = await axios.put(
+  // ***** THE ONLY CHANGE: Change axios.put to axios.patch *****
+  const response = await axios.patch(
+    // <-- CHANGED FROM .put TO .patch
     API_URL + ticketId + "/reopen",
     { reopenReason },
     config
@@ -56,7 +55,7 @@ const reopenTicket = async (ticketId, reopenReason, token) => {
 const noteService = {
   getNotes,
   createNote,
-  reopenTicket, // Add reopenTicket to the service
+  reopenTicket, // Keep this exported
 };
 
 export default noteService;

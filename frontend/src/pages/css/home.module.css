@@ -1,0 +1,43 @@
+/* src/home.module.css */
+
+/* Keyframes for a subtle background animation */
+@keyframes backgroundPan {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  
+  /* Keyframes for card entrance animation */
+  @keyframes fadeInScaleUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  .animatedBackground {
+    background: linear-gradient(
+      270deg,
+      #a855f7,
+      #6366f1,
+      #8b5cf6,
+      #3b82f6,
+      #1e40af
+    ); /* More vibrant gradient */
+    background-size: 400% 400%;
+    animation: backgroundPan 15s ease infinite; /* Slow, continuous animation */
+  }
+  
+  .cardEnter {
+    animation: fadeInScaleUp 0.8s ease-out forwards; /* Apply entrance animation */
+  }

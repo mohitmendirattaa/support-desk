@@ -15,27 +15,34 @@ function AdminTicketItem({ ticket, onDelete, isSelected, onSelect }) {
   const getStatusClass = (status) => {
     switch (status) {
       case "new":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 text-blue-800"; // Good contrast
       case "open":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-blue-500 text-white font-bold";
       case "closed":
-        return "bg-gray-100 text-gray-800";
+        return "bg-red-500 text-white font-bold";
+      case "hold":
+        return "bg-yellow-500 text-white font-bold";
+      case "pending":
+        return "bg-orange-500 text-white font-bold"; 
+      case "resolved":
+        return "bg-green-500 text-white font-bold"; 
+      case "reopened":
+        return "bg-cyan-500 text-white font-bold"; 
       default:
-        return "bg-purple-100 text-purple-800"; // Fallback for unknown status
+        return "bg-purple-100 text-white font-bold"; 
     }
   };
-
   // Helper to determine priority badge styling
   const getPriorityClass = (priority) => {
     switch (priority) {
       case "High":
-        return "bg-red-100 text-red-800";
+        return "bg-red-600 text-white font-bold";
       case "Medium":
-        return "bg-orange-100 text-orange-800";
+        return "bg-orange-500 text-white font-bold";
       case "Low":
-        return "bg-green-100 text-green-800";
+        return "bg-green-500 text-white font-bold";
       default:
-        return "bg-blue-100 text-blue-800"; // Fallback for unknown priority
+        return "bg-gray-500 text-white font-bold";
     }
   };
 
@@ -52,7 +59,6 @@ function AdminTicketItem({ ticket, onDelete, isSelected, onSelect }) {
       </td>
       {/* Ticket ID */}
       <td className="px-4 py-1.5 whitespace-nowrap text-sm font-medium text-gray-900">
-    
         {ticket.id || "N/A"}
       </td>
       {/* Category */}
@@ -97,17 +103,13 @@ function AdminTicketItem({ ticket, onDelete, isSelected, onSelect }) {
       </td>
       {/* Actions */}
       <td className="px-6 py-1.5 whitespace-nowrap text-sm font-medium">
-        {" "}
-        {/* Changed py-4 to py-1.5 */}
         <div className="flex space-x-2">
-          {/* View Details Link */}
           <Link
-            to={`/admin-dashboard/tickets/${ticket.id}`} // Link to the single ticket view using its ID
+            to={`/admin-dashboard/ticket-management/${ticket.id}`} // Link to the single ticket view using its ID
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
           >
             View Details
           </Link>
-          {/* Individual Delete Button (Icon Only) - Conditional Rendering */}
           {isSelected && (
             <button
               onClick={() => onDelete(ticket.id)} // Pass ticket.id to the onDelete handler

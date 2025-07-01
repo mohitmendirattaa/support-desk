@@ -1,3 +1,5 @@
+// frontend/src/components/AdminHeader.jsx
+
 import React from "react";
 import {
   FaSignOutAlt,
@@ -9,7 +11,12 @@ import {
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { logout, reset, setIsLoggingOut } from "../features/auth/authSlice";
+import {
+  logout,
+  reset,
+  setIsLoggingOut,
+  setJustLoggedOut,
+} from "../features/auth/authSlice";
 import { toast } from "react-toastify";
 
 function AdminHeader() {
@@ -17,12 +24,30 @@ function AdminHeader() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
 
-  const onLogout = () => {
+  const onLogout = async () => {
     dispatch(setIsLoggingOut(true));
-    dispatch(logout());
-    dispatch(reset());
-    toast.success("Logged out successfully!");
-    navigate("/login");
+    try {
+      await dispatch(logout()).unwrap(); // Await the logout thunk
+      toast.success("Logged out successfully!"); // Show success toast
+      // Removed dispatch(reset()) from here to prevent premature justLoggedOut reset
+      navigate("/login"); // Navigate to login page
+
+      // Set justLoggedOut to false after a short delay
+      // This gives PrivateRoute time to process the "justLoggedOut" state
+      setTimeout(() => {
+        dispatch(setJustLoggedOut(false));
+      }, 500); // Adjust delay as needed (e.g., 500ms)
+    } catch (error) {
+      console.error("Logout failed on frontend:", error);
+      toast.error("Logout failed. Please try again.");
+      dispatch(setIsLoggingOut(false)); // Reset logging out state
+      navigate("/login"); // Even on error, navigate to login, as user state is likely cleared
+
+      // Set justLoggedOut to false after a short delay even on error
+      setTimeout(() => {
+        dispatch(setJustLoggedOut(false));
+      }, 500); // Adjust delay as needed
+    }
   };
 
   return (

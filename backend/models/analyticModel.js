@@ -2,10 +2,7 @@ const sql = require("mssql");
 const getSqlPool = require("../config/db").getSqlPool; // Assuming this path is correct
 
 const AnalyticModel = {
-  /**
-   * Retrieves the count of tickets by their status.
-   * @returns {Promise<Array<{name: string, count: number}>>} An array of objects, e.g., [{name: 'new', count: 5}, {name: 'open', count: 10}]
-   */
+
   getTicketsByStatus: async () => {
     const pool = getSqlPool();
     try {
@@ -28,10 +25,7 @@ const AnalyticModel = {
     }
   },
 
-  /**
-   * Retrieves the count of tickets by their category.
-   * @returns {Promise<Array<{name: string, count: number}>>} An array of objects, e.g., [{name: 'SAP', count: 15}, {name: 'Digital', count: 8}]
-   */
+
   getTicketsByCategory: async () => {
     const pool = getSqlPool();
     try {
@@ -54,11 +48,7 @@ const AnalyticModel = {
     }
   },
 
-  /**
-   * Retrieves the count of tickets by subCategory for a given main category.
-   * @param {string} category - The main category (e.g., 'SAP', 'Digital').
-   * @returns {Promise<Array<{name: string, count: number}>>} An array of objects, e.g., [{name: 'MM', count: 5}, {name: 'SD', count: 3}]
-   */
+
   getTicketsBySubCategory: async (category) => {
     const pool = getSqlPool();
     try {
@@ -85,10 +75,6 @@ const AnalyticModel = {
     }
   },
 
-  /**
-   * Retrieves the count of tickets by their priority.
-   * @returns {Promise<Array<{name: string, count: number}>>} An array of objects, e.g., [{name: 'High', count: 7}, {name: 'Medium', count: 12}]
-   */
   getTicketCountsByPriority: async () => {
     const pool = getSqlPool();
     try {
@@ -111,13 +97,7 @@ const AnalyticModel = {
     }
   },
 
-  /**
-   * Retrieves the count of tickets created over a specified timeframe (e.g., last 7 days, last 30 days).
-   * @param {string} timeframe - '7days', '30days', '90days', 'year'.
-   * @returns {Promise<Array<{date: string, count: number}>>} An array of objects, e.g., [{date: '2023-10-01', count: 5}]
-   * Note: This is a more complex query and might need adjustment based on your exact SQL Server version and date functions.
-   * This example aggregates daily counts.
-   */
+
   getTicketsCreatedOverTime: async (timeframe = "30days") => {
     const pool = getSqlPool();
     let dateFilter = "";
@@ -162,11 +142,6 @@ const AnalyticModel = {
     }
   },
 
-  /**
-   * Retrieves the total count of users in the system.
-   * This assumes you have a 'Users' table.
-   * @returns {Promise<number>} Total user count.
-   */
   getTotalUserCount: async () => {
     const pool = getSqlPool();
     try {
@@ -181,10 +156,7 @@ const AnalyticModel = {
     }
   },
 
-  /**
-   * Retrieves the count of tickets based on their ServiceType.
-   * @returns {Promise<Array<{name: string, count: number}>>} An array of objects, e.g., [{name: 'Installation', count: 10}]
-   */
+ 
   getTicketsByServiceType: async () => {
     const pool = getSqlPool();
     try {

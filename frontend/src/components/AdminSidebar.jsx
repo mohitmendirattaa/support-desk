@@ -1,15 +1,16 @@
-// src/components/AdminSidebar.jsx
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
   Ticket,
-  Settings,
+  Settings, // Settings icon might still be useful for general admin section links
   BarChart2,
   Bell,
   Database,
-} from "lucide-react"; // Removed ShieldCheck and ClipboardList imports
+  PlusCircle, // Added for New Ticket
+  ClipboardList, // Added for View My Tickets
+} from "lucide-react";
 
 function AdminSidebar() {
   const location = useLocation();
@@ -24,11 +25,10 @@ function AdminSidebar() {
       {/* Navigation Links */}
       <nav className="flex-1">
         <ul className="space-y-4">
-          {/* Dashboard Link */}
           <li>
             <Link
               to="/admin-dashboard"
-              className={`flex items-center p-3 rounded-lg transition-colors duration-200
+              className={`flex items-center p-2 rounded-lg transition-colors duration-200
                 ${
                   location.pathname === "/admin-dashboard"
                     ? "bg-purple-700 text-white shadow-md"
@@ -39,11 +39,42 @@ function AdminSidebar() {
               Dashboard
             </Link>
           </li>
+          {/* New Ticket Link for Admin */}
+          <li>
+            <Link
+              to="/admin-dashboard/new-ticket"
+              className={`flex items-center p-2 rounded-lg transition-colors duration-200
+                ${
+                  location.pathname === "/admin-dashboard/new-ticket"
+                    ? "bg-purple-700 text-white shadow-md"
+                    : "hover:bg-gray-700 text-gray-300"
+                }`}
+            >
+              <PlusCircle size={20} className="mr-3" />
+              Create New Ticket
+            </Link>
+          </li>
+          {/* View My Tickets Link (User's personal tickets) */}
+          <li>
+            <Link
+              to="/admin-dashboard/tickets" // This links to the user's personal tickets page
+              className={`flex items-center p-2 rounded-lg transition-colors duration-200
+                ${
+                  location.pathname.startsWith("/admin-dashboard/tickets") &&
+                  !location.pathname.startsWith("/admin-dashboard/tickets")
+                    ? "bg-purple-700 text-white shadow-md"
+                    : "hover:bg-gray-700 text-gray-300"
+                }`}
+            >
+              <ClipboardList size={20} className="mr-3" />
+              View My Tickets
+            </Link>
+          </li>
           {/* User Management Link */}
           <li>
             <Link
               to="/admin-dashboard/users"
-              className={`flex items-center p-3 rounded-lg transition-colors duration-200
+              className={`flex items-center p-2 rounded-lg transition-colors duration-200
                 ${
                   location.pathname.startsWith("/admin-dashboard/users")
                     ? "bg-purple-700 text-white shadow-md"
@@ -54,13 +85,15 @@ function AdminSidebar() {
               User Management
             </Link>
           </li>
-          {/* Support Tickets Link */}
+          {/* Support Tickets Link (Admin's view of all tickets) */}
           <li>
             <Link
-              to="/admin-dashboard/tickets"
-              className={`flex items-center p-3 rounded-lg transition-colors duration-200
+              to="/admin-dashboard/ticket-management"
+              className={`flex items-center p-2 rounded-lg transition-colors duration-200
                 ${
-                  location.pathname.startsWith("/admin-dashboard/tickets")
+                  location.pathname.startsWith(
+                    "/admin-dashboard/ticket-management"
+                  ) && !location.pathname.includes("new-ticket")
                     ? "bg-purple-700 text-white shadow-md"
                     : "hover:bg-gray-700 text-gray-300"
                 }`}
@@ -73,10 +106,9 @@ function AdminSidebar() {
           <li>
             <Link
               to="/admin-dashboard/analytics"
-              className={`flex items-center p-3 rounded-lg transition-colors duration-200
+              className={`flex items-center p-2 rounded-lg transition-colors duration-200
                 ${
-                  location.pathname.startsWith("/admin-dashboard/analytics") &&
-                  location.pathname !== "/admin-dashboard"
+                  location.pathname.startsWith("/admin-dashboard/analytics")
                     ? "bg-purple-700 text-white shadow-md"
                     : "hover:bg-gray-700 text-gray-300"
                 }`}
@@ -85,11 +117,11 @@ function AdminSidebar() {
               Detailed Analytics
             </Link>
           </li>
-          {/* Notifications Link */}
+          {/* Notifications Link (Assuming this route exists) */}
           <li>
             <Link
               to="/admin-dashboard/notifications"
-              className={`flex items-center p-3 rounded-lg transition-colors duration-200
+              className={`flex items-center p-2 rounded-lg transition-colors duration-200
                 ${
                   location.pathname.startsWith("/admin-dashboard/notifications")
                     ? "bg-purple-700 text-white shadow-md"
@@ -104,7 +136,7 @@ function AdminSidebar() {
           <li>
             <Link
               to="/admin-dashboard/data-management"
-              className={`flex items-center p-3 rounded-lg transition-colors duration-200
+              className={`flex items-center p-2 rounded-lg transition-colors duration-200
                 ${
                   location.pathname.startsWith(
                     "/admin-dashboard/data-management"
@@ -117,11 +149,11 @@ function AdminSidebar() {
               Data Management
             </Link>
           </li>
-          {/* System Settings Link */}
-          <li>
+          {/* System Settings - Removed as per request, but keeping icon for reference */}
+          {/* <li>
             <Link
               to="/admin-dashboard/settings"
-              className={`flex items-center p-3 rounded-lg transition-colors duration-200
+              className={`flex items-center p-2 rounded-lg transition-colors duration-200
                 ${
                   location.pathname.startsWith("/admin-dashboard/settings")
                     ? "bg-purple-700 text-white shadow-md"
@@ -131,7 +163,7 @@ function AdminSidebar() {
               <Settings size={20} className="mr-3" />
               System Settings
             </Link>
-          </li>
+          </li> */}
         </ul>
       </nav>
     </aside>

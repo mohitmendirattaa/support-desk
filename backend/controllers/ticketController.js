@@ -1,5 +1,7 @@
 const User = require("../models/userModel");
 const Ticket = require("../models/ticketModel");
+const Note = require("../models/noteModel");
+
 const multer = require("multer");
 
 const storage = multer.memoryStorage();
@@ -44,7 +46,6 @@ const getTickets = async (req, res, next) => {
 
     res.status(200).json(tickets);
   } catch (error) {
-    console.error("Error getting tickets:", error);
     return next(error);
   }
 };
@@ -73,7 +74,6 @@ const getTicket = async (req, res, next) => {
 
     res.status(200).json(ticket);
   } catch (error) {
-    console.error("Error getting ticket:", error);
     return next(error);
   }
 };
@@ -94,7 +94,6 @@ const getSingleTicketForAdmin = async (req, res, next) => {
 
     res.status(200).json(ticket);
   } catch (error) {
-    console.error("Error getting single ticket for admin:", error);
     return next(error);
   }
 };
@@ -146,13 +145,13 @@ const createTicket = async (req, res, next) => {
       );
     }
 
-    const ticket = await Ticket.create({
+    const ticketDataToSave = {
       ticketIdPrefix,
       priority,
       subCategory,
       description,
       user: req.user.id,
-      status: "new",
+      status: "open",
       startDate,
       endDate,
       service,
@@ -160,9 +159,16 @@ const createTicket = async (req, res, next) => {
       attachmentBuffer,
       attachmentMimeType,
       attachmentFileName,
-    });
+    };
 
-    res.status(201).json(ticket);
+    const newTicket = await Ticket.create(ticketDataToSave);
+
+    if (!newTicket) {
+      res.status(500);
+      return next(new Error("Failed to create ticket in database."));
+    }
+
+    res.status(201).json(newTicket);
   } catch (error) {
     if (error instanceof multer.MulterError) {
       if (error.code === "LIMIT_FILE_SIZE") {
@@ -173,8 +179,7 @@ const createTicket = async (req, res, next) => {
       res.status(400);
       return next(error);
     }
-
-    console.error("Error creating ticket:", error);
+    res.status(500);
     return next(error);
   }
 };
@@ -228,7 +233,6 @@ const updateTicket = async (req, res, next) => {
       return next(error);
     }
 
-    console.error("Error updating ticket:", error);
     return next(error);
   }
 };
@@ -272,7 +276,6 @@ const deleteTicket = async (req, res, next) => {
       message: `Ticket '${ticketIdToDelete}' deleted successfully.`,
     });
   } catch (error) {
-    console.error("Error deleting ticket:", error);
     return next(error);
   }
 };
@@ -288,7 +291,144 @@ const getAllTicketsForAdmin = async (req, res, next) => {
 
     res.status(200).json(tickets);
   } catch (error) {
-    console.error("Error getting all tickets for admin:", error);
+    return next(error);
+  }
+};
+
+const holdTicket = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      res.status(403);
+      return next(
+        new Error(
+          "Access forbidden. Admin role required to put a ticket on hold."
+        )
+      );
+    }
+
+    const ticketId = req.params.id;
+    const updatedTicket = await Ticket.updateStatus(ticketId, "hold");
+
+    if (!updatedTicket) {
+      res.status(404);
+      return next(new Error("Ticket not found or unable to update status."));
+    }
+
+    res.status(200).json({
+      message: `Ticket ${ticketId} put on hold.`,
+      ticket: updatedTicket,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const pendingTicket = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      res.status(403);
+      return next(
+        new Error(
+          "Access forbidden. Admin role required to set a ticket to pending."
+        )
+      );
+    }
+
+    const ticketId = req.params.id;
+    const updatedTicket = await Ticket.updateStatus(ticketId, "pending");
+
+    if (!updatedTicket) {
+      res.status(404);
+      return next(new Error("Ticket not found or unable to update status."));
+    }
+
+    res.status(200).json({
+      message: `Ticket ${ticketId} set to pending.`,
+      ticket: updatedTicket,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const resolveTicket = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      res.status(403);
+      return next(
+        new Error("Access forbidden. Admin role required to resolve a ticket.")
+      );
+    }
+
+    const ticketId = req.params.id;
+    const updatedTicket = await Ticket.updateStatus(ticketId, "resolved");
+
+    if (!updatedTicket) {
+      res.status(404);
+      return next(new Error("Ticket not found or unable to update status."));
+    }
+
+    res.status(200).json({
+      message: `Ticket ${ticketId} resolved.`,
+      ticket: updatedTicket,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const closeTicket = async (req, res, next) => {
+  try {
+    const { id: ticketId } = req.params;
+
+    if (!req.user) {
+      res.status(401);
+      return next(new Error("Not authorized. Please log in."));
+    }
+
+    const ticket = await Ticket.findById(ticketId);
+
+    if (!ticket) {
+      res.status(404);
+      return next(new Error("Ticket not found."));
+    }
+
+    if (
+      req.user.role !== "admin" &&
+      ticket.userId.toString() !== req.user.id.toString()
+    ) {
+      res.status(403);
+      return next(
+        new Error(
+          "Access forbidden. You are not authorized to close this ticket."
+        )
+      );
+    }
+
+    if (ticket.status === "closed") {
+      res.status(400);
+      return next(new Error("Ticket is already closed."));
+    }
+
+    const updatedTicket = await Ticket.updateStatus(ticketId, "closed");
+
+    await Note.create({
+      ticketId: ticketId,
+      userId: req.user.id,
+      text: `Ticket closed by ${req.user.name || "User"}.`,
+      isStaff: req.user.role === "admin",
+    });
+
+    if (!updatedTicket) {
+      res.status(500);
+      return next(new Error("Failed to close ticket."));
+    }
+
+    res.status(200).json({
+      message: `Ticket ${ticketId} closed.`,
+      ticket: updatedTicket,
+    });
+  } catch (error) {
     return next(error);
   }
 };
@@ -301,5 +441,9 @@ module.exports = {
   updateTicket,
   deleteTicket,
   getAllTicketsForAdmin,
+  holdTicket,
+  pendingTicket,
+  resolveTicket,
+  closeTicket,
   upload,
 };

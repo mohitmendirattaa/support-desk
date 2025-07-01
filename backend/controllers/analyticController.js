@@ -1,172 +1,131 @@
-const Analytic = require("../models/analyticModel"); // Corrected to AnalyticModel (capital A and M as per standard naming)
+const Analytic = require("../models/AnalyticModel");
+const asyncHandler = require("express-async-handler");
 
-/**
- * Helper function for common admin role check and error handling.
- * This function will set the status and pass an error to the next middleware
- * if access is forbidden.
- * IMPORTANT: You must ensure your routes file applies a middleware like `protect`
- * before these controllers to ensure `req.user` is populated.
- */
-const checkAdminAccess = (req, res, next) => {
-  if (!req.user || !req.user.role || req.user.role !== "admin") {
-    res.status(403);
-    // Passing the error to the next middleware (your errorHandler)
-    return next(new Error("Access forbidden. Admin role required."));
+const getTicketStatusAnalytics = asyncHandler(async (req, res) => {
+  try {
+    const data = await Analytic.getTicketsByStatus();
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error fetching ticket status analytics:", error);
+    throw error; // Let asyncHandler catch and pass to global error handler
   }
-  // If access is granted, proceed to the next middleware/controller
-  next();
-};
+});
 
-/**
- * @desc Get ticket counts by status for analytics
- * @route GET /api/analytics/tickets/status
- * @access Private/Admin
- */
-const getTicketStatusAnalytics = async (req, res, next) => {
-  // Ensure admin access before proceeding
-  // The 'return' is crucial if next() is called with an error, to prevent further execution
-  checkAdminAccess(req, res, () => {
-    // This callback is executed if checkAdminAccess grants access (i.e., calls next())
-    (async () => {
-      // Self-invoking async function to use await
-      try {
-        const data = await Analytic.getTicketsByStatus();
-        res.status(200).json(data);
-      } catch (error) {
-        console.error("Error fetching ticket status analytics:", error);
-        next(error); // Pass error to global error handler
-      }
-    })();
-  });
-};
+const getTicketCategoryAnalytics = asyncHandler(async (req, res) => {
+  try {
+    const data = await Analytic.getTicketsByCategory();
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error fetching ticket category analytics:", error);
+    throw error;
+  }
+});
 
-/**
- * @desc Get ticket counts by category for analytics
- * @route GET /api/analytics/tickets/category
- * @access Private/Admin
- */
-const getTicketCategoryAnalytics = async (req, res, next) => {
-  checkAdminAccess(req, res, () => {
-    (async () => {
-      try {
-        const data = await Analytic.getTicketsByCategory();
-        res.status(200).json(data);
-      } catch (error) {
-        console.error("Error fetching ticket category analytics:", error);
-        next(error);
-      }
-    })();
-  });
-};
+const getTicketSubCategoryAnalytics = asyncHandler(async (req, res) => {
+  const { category } = req.params;
+  if (!category) {
+    res.status(400);
+    throw new Error("Category parameter is required.");
+  }
+  try {
+    const data = await Analytic.getTicketsBySubCategory(category);
+    res.status(200).json(data);
+  } catch (error) {
+    console.error(
+      `Error fetching ticket subcategory analytics for ${category}:`,
+      error
+    );
+    throw error;
+  }
+});
 
-/**
- * @desc Get ticket counts by subCategory for a given main category for analytics
- * @route GET /api/analytics/tickets/subcategory/:category
- * @access Private/Admin
- */
-const getTicketSubCategoryAnalytics = async (req, res, next) => {
-  checkAdminAccess(req, res, () => {
-    (async () => {
-      const { category } = req.params;
-      if (!category) {
-        res.status(400);
-        return next(new Error("Category parameter is required."));
-      }
+const getTicketPriorityAnalytics = asyncHandler(async (req, res) => {
+  try {
+    const data = await Analytic.getTicketCountsByPriority();
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error fetching ticket priority analytics:", error);
+    throw error;
+  }
+});
 
-      try {
-        const data = await Analytic.getTicketsBySubCategory(category);
-        res.status(200).json(data);
-      } catch (error) {
-        console.error(
-          `Error fetching ticket subcategory analytics for ${category}:`,
-          error
-        );
-        next(error);
-      }
-    })();
-  });
-};
+const getTicketsCreatedOverTimeAnalytics = asyncHandler(async (req, res) => {
+  const { timeframe } = req.query;
 
-/**
- * @desc Get ticket counts by priority for analytics
- * @route GET /api/analytics/tickets/priority
- * @access Private/Admin
- */
-const getTicketPriorityAnalytics = async (req, res, next) => {
-  checkAdminAccess(req, res, () => {
-    (async () => {
-      try {
-        const data = await Analytic.getTicketCountsByPriority();
-        res.status(200).json(data);
-      } catch (error) {
-        console.error("Error fetching ticket priority analytics:", error);
-        next(error);
-      }
-    })();
-  });
-};
+  try {
+    const data = await Analytic.getTicketsCreatedOverTime(timeframe);
+    const filledData = fillMissingDates(data, timeframe);
+    res.status(200).json(filledData);
+  } catch (error) {
+    console.error(
+      `Error fetching ticket creation over time (${timeframe}):`,
+      error
+    );
+    throw error;
+  }
+});
 
-/**
- * @desc Get ticket creation trend over time for analytics
- * @route GET /api/analytics/tickets/overtime?timeframe=30days
- * @access Private/Admin
- */
-const getTicketsCreatedOverTimeAnalytics = async (req, res, next) => {
-  checkAdminAccess(req, res, () => {
-    (async () => {
-      const { timeframe } = req.query; // e.g., '7days', '30days', 'year'
+const getTotalUserCountAnalytics = asyncHandler(async (req, res) => {
+  try {
+    const data = await Analytic.getTotalUserCount();
+    res.status(200).json({ totalUsers: data });
+  } catch (error) {
+    console.error("Error fetching total user count analytics:", error);
+    throw error;
+  }
+});
 
-      try {
-        const data = await Analytic.getTicketsCreatedOverTime(timeframe);
-        res.status(200).json(data);
-      } catch (error) {
-        console.error(
-          `Error fetching ticket creation over time (${timeframe}):`,
-          error
-        );
-        next(error);
-      }
-    })();
-  });
-};
+const getTicketServiceTypeAnalytics = asyncHandler(async (req, res) => {
+  try {
+    const data = await Analytic.getTicketsByServiceType();
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error fetching ticket ServiceType analytics:", error);
+    throw error;
+  }
+});
 
-/**
- * @desc Get total user count for analytics
- * @route GET /api/analytics/users/total
- * @access Private/Admin
- */
-const getTotalUserCountAnalytics = async (req, res, next) => {
-  checkAdminAccess(req, res, () => {
-    (async () => {
-      try {
-        const data = await Analytic.getTotalUserCount();
-        res.status(200).json({ totalUsers: data }); // Wrap in an object for consistency
-      } catch (error) {
-        console.error("Error fetching total user count analytics:", error);
-        next(error);
-      }
-    })();
-  });
-};
+function fillMissingDates(data, timeframe) {
+  if (!data || data.length === 0) return [];
 
-/**
- * @desc Get ticket counts by ServiceType for analytics
- * @route GET /api/analytics/tickets/servicetype
- * @access Private/Admin
- */
-const getTicketServiceTypeAnalytics = async (req, res, next) => {
-  checkAdminAccess(req, res, () => {
-    (async () => {
-      try {
-        const data = await Analytic.getTicketsByServiceType();
-        res.status(200).json(data);
-      } catch (error) {
-        console.error("Error fetching ticket ServiceType analytics:", error);
-        next(error);
-      }
-    })();
-  });
-};
+  const now = new Date();
+  let startDate;
+
+  switch (timeframe) {
+    case "7days":
+      startDate = new Date(now.setDate(now.getDate() - 7));
+      break;
+    case "30days":
+      startDate = new Date(now.setDate(now.getDate() - 30));
+      break;
+    case "90days":
+      startDate = new Date(now.setDate(now.getDate() - 90));
+      break;
+    case "year":
+      startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+      break;
+    default:
+      startDate = new Date(now.setDate(now.getDate() - 30));
+  }
+
+  startDate.setHours(0, 0, 0, 0);
+
+  const dateMap = new Map(
+    data.map((item) => [item.date.split("T")[0], item.count])
+  );
+  const filled = [];
+  let currentDate = new Date(startDate);
+
+  while (currentDate.getTime() <= new Date().getTime()) {
+    const dateString = currentDate.toISOString().split("T")[0];
+    filled.push({
+      date: dateString,
+      count: dateMap.get(dateString) || 0,
+    });
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  return filled;
+}
 
 module.exports = {
   getTicketStatusAnalytics,
