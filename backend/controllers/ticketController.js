@@ -1,8 +1,8 @@
 const User = require("../models/userModel");
 const Ticket = require("../models/ticketModel");
 const Note = require("../models/noteModel");
-
 const multer = require("multer");
+const asyncHandler = require("express-async-handler"); // Import asyncHandler
 
 const storage = multer.memoryStorage();
 
@@ -34,71 +34,59 @@ const upload = multer({
   fileFilter: fileFilter,
 });
 
-const getTickets = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      res.status(401);
-      return next(new Error("User not found"));
-    }
-
-    const tickets = await Ticket.findByUserId(req.user.id);
-
-    res.status(200).json(tickets);
-  } catch (error) {
-    return next(error);
+const getTickets = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(401);
+    return next(new Error("User not found"));
   }
-};
 
-const getTicket = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      res.status(401);
-      return next(new Error("User not found"));
-    }
+  const tickets = await Ticket.findByUserId(req.user.id);
 
-    const ticket = await Ticket.findById(req.params.id);
-    if (!ticket) {
-      res.status(404);
-      return next(new Error("Ticket not found"));
-    }
+  res.status(200).json(tickets);
+});
 
-    if (
-      ticket.userId.toString() !== req.user.id.toString() &&
-      req.user.role !== "admin"
-    ) {
-      res.status(401);
-      return next(new Error("User not authorized to view this ticket"));
-    }
-
-    res.status(200).json(ticket);
-  } catch (error) {
-    return next(error);
+const getTicket = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(401);
+    return next(new Error("User not found"));
   }
-};
 
-const getSingleTicketForAdmin = async (req, res, next) => {
-  try {
-    if (!req.user || req.user.role !== "admin") {
-      res.status(403);
-      return next(new Error("Access forbidden. Admin role required."));
-    }
-
-    const ticket = await Ticket.findByIdWithUserDetails(req.params.id);
-
-    if (!ticket) {
-      res.status(404);
-      return next(new Error("Ticket not found"));
-    }
-
-    res.status(200).json(ticket);
-  } catch (error) {
-    return next(error);
+  const ticket = await Ticket.findById(req.params.id);
+  if (!ticket) {
+    res.status(404);
+    return next(new Error("Ticket not found"));
   }
-};
 
-const createTicket = async (req, res, next) => {
+  if (
+    ticket.userId.toString() !== req.user.id.toString() &&
+    req.user.role !== "admin"
+  ) {
+    res.status(401);
+    return next(new Error("User not authorized to view this ticket"));
+  }
+
+  res.status(200).json(ticket);
+});
+
+const getSingleTicketForAdmin = asyncHandler(async (req, res, next) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403);
+    return next(new Error("Access forbidden. Admin role required."));
+  }
+
+  const ticket = await Ticket.findByIdWithUserDetails(req.params.id);
+
+  if (!ticket) {
+    res.status(404);
+    return next(new Error("Ticket not found"));
+  }
+
+  res.status(200).json(ticket);
+});
+
+const createTicket = asyncHandler(async (req, res, next) => {
   const {
     description,
     priority,
@@ -140,9 +128,6 @@ const createTicket = async (req, res, next) => {
       ticketIdPrefix = `IN`;
     } else {
       ticketIdPrefix = `GEN`;
-      console.warn(
-        `Unexpected service type: "${service}". Using generic ID prefix: ${ticketIdPrefix}`
-      );
     }
 
     const ticketDataToSave = {
@@ -182,38 +167,38 @@ const createTicket = async (req, res, next) => {
     res.status(500);
     return next(error);
   }
-};
+});
 
-const updateTicket = async (req, res, next) => {
+const updateTicket = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(401);
+    return next(new Error("User not authorized"));
+  }
+
+  const ticket = await Ticket.findById(req.params.id);
+  if (!ticket) {
+    res.status(404);
+    return next(new Error("Ticket not found"));
+  }
+
+  if (
+    ticket.userId.toString() !== req.user.id.toString() &&
+    req.user.role !== "admin"
+  ) {
+    res.status(401);
+    return next(new Error("Not authorized to update this ticket"));
+  }
+
+  const fieldsToUpdate = { ...req.body };
+
+  if (req.file) {
+    fieldsToUpdate.attachmentBuffer = req.file.buffer;
+    fieldsToUpdate.attachmentMimeType = req.file.mimetype;
+    fieldsToUpdate.attachmentFileName = req.file.originalname;
+  }
+
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      res.status(401);
-      return next(new Error("User not authorized"));
-    }
-
-    const ticket = await Ticket.findById(req.params.id);
-    if (!ticket) {
-      res.status(404);
-      return next(new Error("Ticket not found"));
-    }
-
-    if (
-      ticket.userId.toString() !== req.user.id.toString() &&
-      req.user.role !== "admin"
-    ) {
-      res.status(401);
-      return next(new Error("Not authorized to update this ticket"));
-    }
-
-    const fieldsToUpdate = { ...req.body };
-
-    if (req.file) {
-      fieldsToUpdate.attachmentBuffer = req.file.buffer;
-      fieldsToUpdate.attachmentMimeType = req.file.mimetype;
-      fieldsToUpdate.attachmentFileName = req.file.originalname;
-    }
-
     const updatedTicket = await Ticket.update(req.params.id, fieldsToUpdate);
 
     if (!updatedTicket) {
@@ -235,203 +220,179 @@ const updateTicket = async (req, res, next) => {
 
     return next(error);
   }
-};
+});
 
-const deleteTicket = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      res.status(401);
-      return next(new Error("User not authorized"));
-    }
-
-    const ticketIdToDelete = req.params.id;
-
-    const ticket = await Ticket.findById(ticketIdToDelete);
-
-    if (!ticket) {
-      res.status(404);
-      return next(new Error(`Ticket with ID '${ticketIdToDelete}' not found.`));
-    }
-
-    if (
-      ticket.userId.toString() !== req.user.id.toString() &&
-      req.user.role !== "admin"
-    ) {
-      res.status(401);
-      return next(new Error("Not authorized to delete this ticket"));
-    }
-
-    const deleted = await Ticket.delete(ticketIdToDelete);
-
-    if (!deleted) {
-      res.status(500);
-      return next(
-        new Error(`Failed to delete ticket with ID '${ticketIdToDelete}'.`)
-      );
-    }
-
-    res.status(200).json({
-      success: true,
-      message: `Ticket '${ticketIdToDelete}' deleted successfully.`,
-    });
-  } catch (error) {
-    return next(error);
+const deleteTicket = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    res.status(401);
+    return next(new Error("User not authorized"));
   }
-};
 
-const getAllTicketsForAdmin = async (req, res, next) => {
-  try {
-    if (!req.user || !req.user.role || req.user.role !== "admin") {
-      res.status(403);
-      return next(new Error("Access forbidden. Admin role required."));
-    }
+  const ticketIdToDelete = req.params.id;
 
-    const tickets = await Ticket.findAllWithUserDetails();
+  const ticket = await Ticket.findById(ticketIdToDelete);
 
-    res.status(200).json(tickets);
-  } catch (error) {
-    return next(error);
+  if (!ticket) {
+    res.status(404);
+    return next(new Error(`Ticket with ID '${ticketIdToDelete}' not found.`));
   }
-};
 
-const holdTicket = async (req, res, next) => {
-  try {
-    if (!req.user || req.user.role !== "admin") {
-      res.status(403);
-      return next(
-        new Error(
-          "Access forbidden. Admin role required to put a ticket on hold."
-        )
-      );
-    }
-
-    const ticketId = req.params.id;
-    const updatedTicket = await Ticket.updateStatus(ticketId, "hold");
-
-    if (!updatedTicket) {
-      res.status(404);
-      return next(new Error("Ticket not found or unable to update status."));
-    }
-
-    res.status(200).json({
-      message: `Ticket ${ticketId} put on hold.`,
-      ticket: updatedTicket,
-    });
-  } catch (error) {
-    return next(error);
+  if (
+    ticket.userId.toString() !== req.user.id.toString() &&
+    req.user.role !== "admin"
+  ) {
+    res.status(401);
+    return next(new Error("Not authorized to delete this ticket"));
   }
-};
 
-const pendingTicket = async (req, res, next) => {
-  try {
-    if (!req.user || req.user.role !== "admin") {
-      res.status(403);
-      return next(
-        new Error(
-          "Access forbidden. Admin role required to set a ticket to pending."
-        )
-      );
-    }
+  const deleted = await Ticket.delete(ticketIdToDelete);
 
-    const ticketId = req.params.id;
-    const updatedTicket = await Ticket.updateStatus(ticketId, "pending");
-
-    if (!updatedTicket) {
-      res.status(404);
-      return next(new Error("Ticket not found or unable to update status."));
-    }
-
-    res.status(200).json({
-      message: `Ticket ${ticketId} set to pending.`,
-      ticket: updatedTicket,
-    });
-  } catch (error) {
-    return next(error);
+  if (!deleted) {
+    res.status(500);
+    return next(
+      new Error(`Failed to delete ticket with ID '${ticketIdToDelete}'.`)
+    );
   }
-};
 
-const resolveTicket = async (req, res, next) => {
-  try {
-    if (!req.user || req.user.role !== "admin") {
-      res.status(403);
-      return next(
-        new Error("Access forbidden. Admin role required to resolve a ticket.")
-      );
-    }
+  res.status(200).json({
+    success: true,
+    message: `Ticket '${ticketIdToDelete}' deleted successfully.`,
+  });
+});
 
-    const ticketId = req.params.id;
-    const updatedTicket = await Ticket.updateStatus(ticketId, "resolved");
-
-    if (!updatedTicket) {
-      res.status(404);
-      return next(new Error("Ticket not found or unable to update status."));
-    }
-
-    res.status(200).json({
-      message: `Ticket ${ticketId} resolved.`,
-      ticket: updatedTicket,
-    });
-  } catch (error) {
-    return next(error);
+const getAllTicketsForAdmin = asyncHandler(async (req, res, next) => {
+  if (!req.user || !req.user.role || req.user.role !== "admin") {
+    res.status(403);
+    return next(new Error("Access forbidden. Admin role required."));
   }
-};
 
-const closeTicket = async (req, res, next) => {
-  try {
-    const { id: ticketId } = req.params;
+  const tickets = await Ticket.findAllWithUserDetails();
 
-    if (!req.user) {
-      res.status(401);
-      return next(new Error("Not authorized. Please log in."));
-    }
+  res.status(200).json(tickets);
+});
 
-    const ticket = await Ticket.findById(ticketId);
-
-    if (!ticket) {
-      res.status(404);
-      return next(new Error("Ticket not found."));
-    }
-
-    if (
-      req.user.role !== "admin" &&
-      ticket.userId.toString() !== req.user.id.toString()
-    ) {
-      res.status(403);
-      return next(
-        new Error(
-          "Access forbidden. You are not authorized to close this ticket."
-        )
-      );
-    }
-
-    if (ticket.status === "closed") {
-      res.status(400);
-      return next(new Error("Ticket is already closed."));
-    }
-
-    const updatedTicket = await Ticket.updateStatus(ticketId, "closed");
-
-    await Note.create({
-      ticketId: ticketId,
-      userId: req.user.id,
-      text: `Ticket closed by ${req.user.name || "User"}.`,
-      isStaff: req.user.role === "admin",
-    });
-
-    if (!updatedTicket) {
-      res.status(500);
-      return next(new Error("Failed to close ticket."));
-    }
-
-    res.status(200).json({
-      message: `Ticket ${ticketId} closed.`,
-      ticket: updatedTicket,
-    });
-  } catch (error) {
-    return next(error);
+const holdTicket = asyncHandler(async (req, res, next) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403);
+    return next(
+      new Error(
+        "Access forbidden. Admin role required to put a ticket on hold."
+      )
+    );
   }
-};
+
+  const ticketId = req.params.id;
+  const updatedTicket = await Ticket.updateStatus(ticketId, "hold");
+
+  if (!updatedTicket) {
+    res.status(404);
+    return next(new Error("Ticket not found or unable to update status."));
+  }
+
+  res.status(200).json({
+    message: `Ticket ${ticketId} put on hold.`,
+    ticket: updatedTicket,
+  });
+});
+
+const pendingTicket = asyncHandler(async (req, res, next) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403);
+    return next(
+      new Error(
+        "Access forbidden. Admin role required to set a ticket to pending."
+      )
+    );
+  }
+
+  const ticketId = req.params.id;
+  const updatedTicket = await Ticket.updateStatus(ticketId, "pending");
+
+  if (!updatedTicket) {
+    res.status(404);
+    return next(new Error("Ticket not found or unable to update status."));
+  }
+
+  res.status(200).json({
+    message: `Ticket ${ticketId} set to pending.`,
+    ticket: updatedTicket,
+  });
+});
+
+const resolveTicket = asyncHandler(async (req, res, next) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403);
+    return next(
+      new Error("Access forbidden. Admin role required to resolve a ticket.")
+    );
+  }
+
+  const ticketId = req.params.id;
+  const updatedTicket = await Ticket.updateStatus(ticketId, "resolved");
+
+  if (!updatedTicket) {
+    res.status(404);
+    return next(new Error("Ticket not found or unable to update status."));
+  }
+
+  res.status(200).json({
+    message: `Ticket ${ticketId} resolved.`,
+    ticket: updatedTicket,
+  });
+});
+
+const closeTicket = asyncHandler(async (req, res, next) => {
+  const { id: ticketId } = req.params;
+
+  if (!req.user) {
+    res.status(401);
+    return next(new Error("Not authorized. Please log in."));
+  }
+
+  const ticket = await Ticket.findById(ticketId);
+
+  if (!ticket) {
+    res.status(404);
+    return next(new Error("Ticket not found."));
+  }
+
+  if (
+    req.user.role !== "admin" &&
+    ticket.userId.toString() !== req.user.id.toString()
+  ) {
+    res.status(403);
+    return next(
+      new Error(
+        "Access forbidden. You are not authorized to close this ticket."
+      )
+    );
+  }
+
+  if (ticket.status === "closed") {
+    res.status(400);
+    return next(new Error("Ticket is already closed."));
+  }
+
+  const updatedTicket = await Ticket.updateStatus(ticketId, "closed");
+
+  await Note.create({
+    ticketId: ticketId,
+    userId: req.user.id,
+    text: `Ticket closed by ${req.user.name || "User"}.`,
+    isStaff: req.user.role === "admin",
+  });
+
+  if (!updatedTicket) {
+    res.status(500);
+    return next(new Error("Failed to close ticket."));
+  }
+
+  res.status(200).json({
+    message: `Ticket ${ticketId} closed.`,
+    ticket: updatedTicket,
+  });
+});
 
 module.exports = {
   getTickets,

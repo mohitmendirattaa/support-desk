@@ -4,7 +4,6 @@ const sql = require("mssql");
 const getSqlPool = require("../config/db").getSqlPool;
 
 class Log {
-
   static async createLogEntry(userId, action) {
     if (!userId || typeof userId !== "string") {
       console.error("LogModel: Invalid User ID provided for log entry.");
@@ -41,11 +40,7 @@ class Log {
     }
   }
 
-  /**
-   * @desc Fetches all log entries from the database, ordered by timestamp descending.
-   * @returns {Promise<Array<Object>>} A promise that resolves to an array of log objects.
-   * @throws {Error} If there's a database error during retrieval.
-   */
+
   static async findAllLogs() {
     try {
       const pool = getSqlPool();

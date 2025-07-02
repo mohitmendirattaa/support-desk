@@ -2,7 +2,7 @@ const User = require("../models/userModel");
 const Log = require("../models/logModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const asyncHandler = require("express-async-handler"); // <-- ADD THIS LINE
+const asyncHandler = require("express-async-handler");
 
 const isValidGuid = (id) => {
   const guidRegex =
@@ -10,9 +10,7 @@ const isValidGuid = (id) => {
   return typeof id === "string" && guidRegex.test(id);
 };
 
-// Wrap registerUser in asyncHandler if it's not already
 const registerUser = asyncHandler(async (req, res, next) => {
-  // <-- WRAP HERE
   const { name, email, password, contact, employeeCode, location, company } =
     req.body;
 
@@ -44,7 +42,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
       employeeCode,
       location,
       company,
-      status: "active", // New users are active by default
+      status: "active",
     });
 
     if (user) {
@@ -66,14 +64,11 @@ const registerUser = asyncHandler(async (req, res, next) => {
       return next(new Error("User registration failed. Please try again."));
     }
   } catch (error) {
-    console.error("Register User Error:", error);
     return next(error);
   }
 });
 
-// Wrap loginUser in asyncHandler if it's not already
 const loginUser = asyncHandler(async (req, res, next) => {
-  // <-- WRAP HERE
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -82,21 +77,19 @@ const loginUser = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    const user = await User.findByEmail(email); // Check if user exists and if the password matches
+    const user = await User.findByEmail(email);
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      // --- IMPORTANT: Add status check here ---
       if (user.status === "inactive") {
-        res.status(403); // Forbidden status
+        res.status(403);
         return next(
           new Error(
             "Your account is currently inactive. Please contact support."
           )
         );
-      } // Log the Login event: Now only passing UserID and Action
+      }
 
       await Log.createLogEntry(user.id, "Login");
-      console.log("--> Log.createLogEntry called successfully for login."); // Add this log
 
       res.status(200).json({
         _id: user.id,
@@ -116,40 +109,28 @@ const loginUser = asyncHandler(async (req, res, next) => {
       return next(new Error("Invalid credentials"));
     }
   } catch (error) {
-    console.error("Login User Error:", error);
     return next(error);
   }
 });
 
-// Wrap logoutUser in asyncHandler
 const logoutUser = asyncHandler(async (req, res, next) => {
-  // <-- WRAP HERE
-  console.log("--> logoutUser function initiated."); // Add this line
   if (!req.user || !req.user.id) {
-    console.log("--> Error: req.user not available or invalid ID for logout."); // Add this line
     res.status(401);
     return next(new Error("Not authorized. No user found for logout."));
   }
 
-  console.log("--> User found for logout:", req.user.id); // Add this line
-
   try {
     await Log.createLogEntry(req.user.id, "Logout");
-    console.log("--> Log.createLogEntry called successfully for logout."); // Add this line
 
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    console.error("--> FATAL: Logout User Error in catch block:", error); // Add this line
     res.status(200).json({
       message: "Logged out successfully, but logging failed internally.",
     });
   }
-  console.log("--> logoutUser function completed."); // Add this line
 });
 
-// Wrap other functions in asyncHandler too, if they use async/await
 const getAllUsers = asyncHandler(async (req, res, next) => {
-  // <-- WRAP HERE
   if (!req.user || req.user.role !== "admin") {
     res.status(403);
     return next(new Error("Not authorized. Admin privileges required."));
@@ -159,14 +140,12 @@ const getAllUsers = asyncHandler(async (req, res, next) => {
     const users = await User.findAll();
     res.status(200).json(users);
   } catch (error) {
-    console.error("Get All Users Error:", error);
     res.status(500);
     return next(new Error("Could not retrieve users."));
   }
 });
 
 const getSingleUser = asyncHandler(async (req, res, next) => {
-  // <-- WRAP HERE
   const userId = req.params.id;
 
   if (!isValidGuid(userId)) {
@@ -189,14 +168,12 @@ const getSingleUser = asyncHandler(async (req, res, next) => {
     }
     res.status(200).json(user);
   } catch (error) {
-    console.error("Get Single User Error:", error);
     res.status(500);
     return next(new Error("Could not retrieve user due to a server error."));
   }
 });
 
 const updateUserStatus = asyncHandler(async (req, res, next) => {
-  // <-- WRAP HERE
   const { id } = req.params;
   const { status } = req.body;
 
@@ -241,14 +218,12 @@ const updateUserStatus = asyncHandler(async (req, res, next) => {
 
     res.status(200).json(updatedUser);
   } catch (error) {
-    console.error("Update User Status Error:", error);
     res.status(500);
     return next(new Error("Failed to update user status."));
   }
 });
 
 const updateUser = asyncHandler(async (req, res, next) => {
-  // <-- WRAP HERE
   const { id } = req.params;
 
   if (!isValidGuid(id)) {
@@ -338,13 +313,11 @@ const updateUser = asyncHandler(async (req, res, next) => {
       updatedAt: updatedUser.updatedAt,
     });
   } catch (error) {
-    console.error("Update User Error:", error);
     return next(error);
   }
 });
 
 const getMe = asyncHandler(async (req, res) => {
-  // <-- WRAP HERE
   const user = {
     id: req?.user?.id,
     name: req?.user?.name,

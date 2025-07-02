@@ -8,7 +8,7 @@ const errorHandler = require("./middleware/errorMiddleware");
 const connectDb = require("./config/db");
 const ticketRouter = require("./routes/ticketRoutes");
 const analyticRoutes = require("./routes/analyticRoutes"); // NEW: Import analytic routes
-const logRoutes = require("./routes/logRoutes")
+const logRoutes = require("./routes/logRoutes");
 
 connectDb();
 
