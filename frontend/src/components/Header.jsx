@@ -1,25 +1,48 @@
-import React from "react";
-import { FaSignInAlt, FaSignOutAlt, FaUser } from "react-icons/fa";
+import React, { useEffect } from "react"; // ✅ ADDED: useEffect import
+import { FaSignInAlt, FaSignOutAlt, FaUser, FaBell } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout, reset } from "../features/auth/authSlice";
+// ✅ NEW: Import for user notifications slice
+import {
+  getUnseenUserNotificationsCount,
+  resetUserNotifications,
+} from "../features/userNotifications/userNotificationSlice";
 
 function Header() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  // ✅ NEW: Get unseenCount from userNotifications slice
+  const { unseenCount } = useSelector((state) => state.userNotifications);
+
+  // useEffect to fetch unseen count when user logs in/out
+  useEffect(() => {
+    if (user) {
+      // Fetch unseen count when user is logged in
+      dispatch(getUnseenUserNotificationsCount());
+    } else {
+      // Reset notifications state when user logs out
+      dispatch(resetUserNotifications());
+    }
+  }, [user, dispatch]); // Depend on 'user' and 'dispatch'
 
   const onLogout = () => {
     dispatch(logout());
     dispatch(reset());
+    dispatch(resetUserNotifications()); // ✅ NEW: Ensure user notifications are cleared on logout
     navigate("/");
+  };
+
+  const handleBellClick = () => {
+    navigate("/user-notifications"); // Navigate to the user's notifications page
   };
 
   return (
     <header className="bg-gray-800 shadow-xl py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center fixed top-0 left-0 w-full z-20">
       <div className="logo flex items-center flex-shrink-0">
         <svg
-          className="mr-2 h-8 w-8 sm:h-10 sm:w-10 text-blue-400" // Smaller on mobile, larger on sm+
+          className="mr-2 h-8 w-8 sm:h-10 sm:w-10 text-blue-400"
           fill="currentColor"
           viewBox="0 0 1542 1542"
           xmlns="http://www.w3.org/2000/svg"
@@ -47,6 +70,22 @@ function Header() {
       <ul className="flex space-x-2 sm:space-x-4 lg:space-x-6 items-center">
         {user ? (
           <>
+            {/* Notification Bell Icon with Unread Count */}
+            <li>
+              <button
+                onClick={handleBellClick}
+                className="relative flex items-center text-gray-300 hover:text-blue-400 font-semibold transition-colors duration-300 text-sm sm:text-base focus:outline-none"
+              >
+                <FaBell className="text-blue-400 text-lg sm:text-xl" />
+                {unseenCount > 0 && ( // ✅ Display count only if > 0
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {unseenCount}
+                  </span>
+                )}
+                <span className="ml-1 hidden sm:inline-block"></span>
+              </button>
+            </li>
+
             <li>
               <Link
                 to={"/profile"}

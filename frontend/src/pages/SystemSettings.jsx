@@ -1,8 +1,7 @@
-// frontend/src/pages/SystemSetting.jsx
-
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react"; // Import useState
 import { useDispatch, useSelector } from "react-redux";
 import { fetchLogs, resetLogs } from "../features/logs/logSlice";
+import AdvancedLogSearchModal from "../components/AdvancedLogSearchModal"; // Import the new modal component
 import {
   FaSyncAlt, // For refresh button
   FaSignInAlt, // For Login action
@@ -18,6 +17,7 @@ import {
   FaExclamationCircle, // For error message
   FaClipboardList, // For no logs found
   FaCogs, // For general settings/system log icon
+  FaSearchPlus, // For advanced search button
 } from "react-icons/fa"; // Import necessary React Icons
 
 const SystemSetting = () => {
@@ -26,15 +26,22 @@ const SystemSetting = () => {
     (state) => state.logs
   );
 
-  // Fetch logs on component mount
+  // State to manage the visibility of the advanced search modal
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  // State to store the currently active search criteria
+  const [currentSearchCriteria, setCurrentSearchCriteria] = useState({});
+
+  // Fetch logs on component mount or when search criteria change
   useEffect(() => {
-    dispatch(fetchLogs());
+    // Dispatch fetchLogs with the current search criteria
+    // If currentSearchCriteria is empty, it will fetch all logs
+    dispatch(fetchLogs(currentSearchCriteria));
 
     // Cleanup function: reset logs state on component unmount
     return () => {
       dispatch(resetLogs());
     };
-  }, [dispatch]);
+  }, [dispatch, currentSearchCriteria]); // Dependency array includes currentSearchCriteria
 
   // Helper function to determine text color and icon based on log Action
   const getLogDetails = (action) => {
@@ -86,36 +93,88 @@ const SystemSetting = () => {
     return { colorClass, IconComponent };
   };
 
+  // Callback function to handle search criteria from the modal
+  const handleSearch = (criteria) => {
+    setCurrentSearchCriteria(criteria); // Update the state, which will trigger useEffect
+    // No need to dispatch fetchLogs here directly, useEffect handles it
+  };
+
+  // Function to clear all active filters
+  const handleClearFilters = () => {
+    setCurrentSearchCriteria({}); // Reset to empty object, fetching all logs
+    setIsSearchModalOpen(false); // Close the modal if it's open
+  };
+
+  // Determine if any filters are currently active for display
+  const hasActiveFilters =
+    currentSearchCriteria.from ||
+    currentSearchCriteria.to ||
+    currentSearchCriteria.userId;
+
   return (
     <div className="p-4 sm:p-8 font-sans max-w-full mx-auto bg-gray-50 rounded-lg shadow-xl min-h-screen">
-      {" "}
-      {/* Increased max-width and added min-h-screen */}
       <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-800 text-center mb-8 pb-4 border-b-4 border-blue-200 flex items-center justify-center">
         <FaCogs className="mr-3 text-blue-500" /> System Activity Logs
       </h2>
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 shadow-lg">
-        {" "}
-        {/* Rounded-xl for more modern look */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-5 pb-2 border-b border-dashed border-gray-200">
           <h3 className="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 sm:mb-0">
             Recent Activity
           </h3>
-          <button
-            onClick={() => dispatch(fetchLogs())}
-            disabled={isLoadingLogs}
-            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-base"
-          >
-            {isLoadingLogs ? (
-              <FaSpinner className="animate-spin -ml-1 mr-3 h-5 w-5" />
-            ) : (
-              <FaSyncAlt className="mr-2 h-5 w-5" /> // Using FaSyncAlt for refresh
-            )}
-            {isLoadingLogs ? "Refreshing..." : "Refresh Logs"}
-          </button>
+          <div className="flex space-x-3">
+            {/* Advanced Search Button */}
+            <button
+              onClick={() => setIsSearchModalOpen(true)}
+              className="px-6 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 transition duration-200 flex items-center justify-center text-base"
+            >
+              <FaSearchPlus className="mr-2 h-5 w-5" /> Advanced Search
+            </button>
+            {/* Refresh Logs Button */}
+            <button
+              onClick={() => {
+                setCurrentSearchCriteria({}); // Clear any active filters on explicit refresh
+                // No need to dispatch here, setting currentSearchCriteria to empty will trigger useEffect
+              }}
+              disabled={isLoadingLogs}
+              className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-base"
+            >
+              {isLoadingLogs ? (
+                <FaSpinner className="animate-spin -ml-1 mr-3 h-5 w-5" />
+              ) : (
+                <FaSyncAlt className="mr-2 h-5 w-5" />
+              )}
+              {isLoadingLogs ? "Refreshing..." : "Refresh Logs"}
+            </button>
+          </div>
         </div>
+
+        {/* Display Active Filters */}
+        {hasActiveFilters && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-md flex flex-wrap items-center justify-between text-sm shadow-inner">
+            <span className="mr-2 mb-1 sm:mb-0">
+              <strong className="font-semibold">Active Filters:</strong>{" "}
+              {currentSearchCriteria.from && currentSearchCriteria.to && (
+                <span>
+                  Date: **{currentSearchCriteria.from}** to **
+                  {currentSearchCriteria.to}**
+                  {currentSearchCriteria.userId && " | "}{" "}
+                  {/* Add separator if userId also present */}
+                </span>
+              )}
+              {currentSearchCriteria.userId && (
+                <span>User ID: **{currentSearchCriteria.userId}**</span>
+              )}
+            </span>
+            <button
+              onClick={handleClearFilters}
+              className="ml-auto text-blue-600 hover:text-blue-800 font-semibold text-xs py-1 px-2 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-150"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        )}
+
         <div className="max-h-[70vh] overflow-y-auto border border-gray-300 rounded-lg bg-gray-100 p-4 text-sm shadow-inner">
-          {" "}
-          {/* Increased max-height for more content */}
           {/* Loading state display */}
           {isLoadingLogs && (
             <p className="text-gray-600 text-center py-4 flex items-center justify-center">
@@ -156,7 +215,15 @@ const SystemSetting = () => {
                     {/* Timestamp in local string format (IST for you) */}
                     <span className="font-semibold text-gray-500 mr-2 text-xs sm:text-sm">
                       {log.Timestamp
-                        ? new Date(log.Timestamp).toLocaleString()
+                        ? new Date(log.Timestamp).toLocaleString("en-IN", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true,
+                          })
                         : "N/A"}
                     </span>
                     {/* Log Action with color */}
@@ -180,6 +247,14 @@ const SystemSetting = () => {
             })}
         </div>
       </div>
+
+      {/* Advanced Log Search Modal */}
+      <AdvancedLogSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSearch={handleSearch} // Pass the handleSearch callback
+        initialSearchCriteria={currentSearchCriteria} // Pass current criteria to pre-fill modal
+      />
     </div>
   );
 };

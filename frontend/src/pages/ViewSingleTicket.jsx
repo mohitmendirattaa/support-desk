@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import {
   getSingleTicketAsAdmin,
   reset,
-  updateTicketStatus, // Correctly importing updateTicketStatus
+  updateTicketStatus,
 } from "../features/tickets/ticketSlice";
 import { getNotes, reset as resetNotes } from "../features/notes/noteSlice";
 import Spinner from "../components/Spinner";
@@ -40,7 +40,13 @@ function ViewSingleTicket() {
   const { ticketId } = useParams();
   const navigate = useNavigate();
 
+  // State for dropdown visibility
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // States for the confirmation modal
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusToUpdate, setStatusToUpdate] = useState("");
+  const [reason, setReason] = useState("");
 
   const getStatusClasses = (status) => {
     switch (status) {
@@ -57,7 +63,7 @@ function ViewSingleTicket() {
       case "hold":
         return "bg-orange-200 text-orange-800";
       case "resolved":
-        return "bg-teal-200 text-teal-800"; // This is already defined correctly
+        return "bg-teal-200 text-teal-800";
       default:
         return "bg-gray-200 text-gray-800";
     }
@@ -88,13 +94,12 @@ function ViewSingleTicket() {
       navigate("/login");
     } else if (user.role !== "admin") {
       toast.error("You are not authorized to view this page.");
-      navigate("/admin-dashboard"); // Assuming this is the correct redirect for non-admins
+      navigate("/admin-dashboard");
     } else {
       dispatch(getSingleTicketAsAdmin(ticketId));
       dispatch(getNotes(ticketId));
     }
 
-    // Cleanup function
     return () => {
       dispatch(reset());
       dispatch(resetNotes());
@@ -114,7 +119,6 @@ function ViewSingleTicket() {
     return <Spinner />;
   }
 
-  // Handle case where ticket data is not loaded or invalid
   if (isError || !ticket || !ticket.id) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] bg-red-50 text-red-700 p-8 rounded-lg shadow-md mx-auto max-w-lg mt-10">
@@ -135,24 +139,45 @@ function ViewSingleTicket() {
     toast.info("Edit functionality is under construction. Stay tuned!");
   };
 
+  // This function now *opens the modal* instead of dispatching directly
   const handleStatusUpdate = (newStatus) => {
-    setIsDropdownOpen(false); // Close dropdown immediately
+    setIsDropdownOpen(false); // Close the status dropdown
+    setStatusToUpdate(newStatus); // Set the status that needs to be updated
+    setReason(""); // Clear any previous reason
+    setShowStatusModal(true); // Show the modal
+  };
 
-    dispatch(updateTicketStatus({ ticketId, newStatus }))
-      .unwrap() // Use unwrap() to handle fulfilled or rejected promises
+  // This function is called when the user confirms the update from the modal
+  const confirmStatusUpdate = () => {
+    if (!reason.trim()) {
+      toast.error("Please provide a reason for the status change.");
+      return;
+    }
+
+    dispatch(
+      updateTicketStatus({ ticketId, newStatus: statusToUpdate, reason })
+    ) // Pass the reason here
+      .unwrap()
       .then(() => {
-        toast.success(`Ticket status updated to "${newStatus}"!`);
+        toast.success(`Ticket status updated to "${statusToUpdate}"!`);
+        setShowStatusModal(false); // Close modal on success
         // If status becomes closed or resolved, navigate to tickets list
-        if (newStatus === "closed" || newStatus === "resolved") {
+        if (statusToUpdate === "closed" || statusToUpdate === "resolved") {
           navigate("/admin-dashboard/tickets");
         }
       })
       .catch((error) => {
-        // Display error message from backend or a generic one
         toast.error(
-          error.message || `Failed to update ticket to ${newStatus}.`
+          error.message || `Failed to update ticket to ${statusToUpdate}.`
         );
+        setShowStatusModal(false); // Close modal on error too
       });
+  };
+
+  const closeStatusModal = () => {
+    setShowStatusModal(false);
+    setReason(""); // Clear reason when closing
+    setStatusToUpdate(""); // Clear status when closing
   };
 
   const formatDate = (dateString) => {
@@ -187,7 +212,7 @@ function ViewSingleTicket() {
       const isPdf = attachmentMimeType === "application/pdf";
       const isWord =
         attachmentMimeType.includes("wordprocessingml") ||
-        attachmentMimeType === "application/msword"; // More robust check for Word
+        attachmentMimeType === "application/msword";
 
       return (
         <div className="mt-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
@@ -212,7 +237,6 @@ function ViewSingleTicket() {
         </div>
       );
     } else if (attachment) {
-      // Fallback for cases where MIME type or filename is missing but attachment data exists
       return (
         <div className="mt-4 p-4 bg-yellow-100 rounded-lg border border-yellow-200 text-yellow-800">
           <p className="font-semibold flex items-center gap-2">
@@ -221,8 +245,8 @@ function ViewSingleTicket() {
           </p>
           <p className="text-sm mt-1">
             <a
-              href={`data:application/octet-stream;base64,${attachment}`} // Generic binary stream
-              download="attachment_unknown_type" // Provide a generic download name
+              href={`data:application/octet-stream;base64,${attachment}`}
+              download="attachment_unknown_type"
               className="text-blue-600 hover:underline flex items-center"
             >
               <FaFileAlt className="mr-1" /> Download Generic File
@@ -238,7 +262,6 @@ function ViewSingleTicket() {
     );
   };
 
-  // Determine if the ticket is in a final, non-editable state
   const isTicketClosed = ticket.status === "closed";
   const isTicketResolved = ticket.status === "resolved";
 
@@ -249,7 +272,6 @@ function ViewSingleTicket() {
         <h1 className="text-4xl font-extrabold text-blue-800 tracking-tight text-center flex-grow">
           {ticket.service || "Support"} Ticket
         </h1>
-        {/* Placeholder for symmetry, adjust as needed */}
         <div className="w-auto opacity-0">
           <BackButton />
         </div>
@@ -292,7 +314,6 @@ function ViewSingleTicket() {
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
                 {/* Status Update Options */}
-                {/* Option to change to 'hold' */}
                 {ticket.status !== "hold" &&
                   !isTicketClosed &&
                   !isTicketResolved && (
@@ -303,7 +324,6 @@ function ViewSingleTicket() {
                       Hold
                     </button>
                   )}
-                {/* Option to change to 'pending' */}
                 {ticket.status !== "pending" &&
                   !isTicketClosed &&
                   !isTicketResolved && (
@@ -314,18 +334,14 @@ function ViewSingleTicket() {
                       Pending
                     </button>
                   )}
-                {/* Option to change to 'resolved' */}
-                {/* Show "Resolve" if not already resolved or closed */}
                 {!isTicketResolved && !isTicketClosed && (
                   <button
                     onClick={() => handleStatusUpdate("resolved")}
-                    className="block w-full text-left px-4 py-2 text-teal-700 hover:bg-teal-50" // Teal color for Resolve
+                    className="block w-full text-left px-4 py-2 text-teal-700 hover:bg-teal-50"
                   >
                     Resolve
                   </button>
                 )}
-                {/* Option to change to 'closed' */}
-                {/* Show "Close" if not already closed */}
                 {!isTicketClosed && (
                   <button
                     onClick={() => handleStatusUpdate("closed")}
@@ -334,8 +350,6 @@ function ViewSingleTicket() {
                     Close
                   </button>
                 )}
-                {/* Option to change to 'reopened' */}
-                {/* Show "Reopen" ONLY if current status is "closed" */}
                 {ticket.status === "closed" && (
                   <button
                     onClick={() => handleStatusUpdate("reopened")}
@@ -461,6 +475,54 @@ function ViewSingleTicket() {
           </div>
         )}
       </div>
+
+      {/* Status Update Confirmation Modal */}
+      {showStatusModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+            <h3 className="text-2xl font-bold text-blue-800 mb-4 flex items-center">
+              <FaPencilAlt className="mr-2" /> Confirm Status Change
+            </h3>
+            <p className="text-gray-700 mb-6">
+              You are about to change the ticket status to{" "}
+              <span className="font-semibold text-indigo-700">
+                "{statusToUpdate.toUpperCase()}"
+              </span>
+              . Please provide a reason for this change:
+            </p>
+            <div className="mb-6">
+              <label
+                htmlFor="reason"
+                className="block text-gray-700 text-sm font-bold mb-2"
+              >
+                Reason:
+              </label>
+              <textarea
+                id="reason"
+                className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-28 resize-none"
+                placeholder="E.g., Issue resolved, waiting for user response, escalated to L2 support, etc."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                required
+              ></textarea>
+            </div>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={closeStatusModal}
+                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmStatusUpdate}
+                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors"
+              >
+                Confirm Update
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

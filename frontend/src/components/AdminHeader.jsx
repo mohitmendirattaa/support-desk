@@ -8,12 +8,12 @@ import {
   FaChartBar,
   FaCog,
   FaUserPlus,
+  FaBell, // Import the bell icon
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import {
   logout,
-  reset,
   setIsLoggingOut,
   setJustLoggedOut,
 } from "../features/auth/authSlice";
@@ -29,7 +29,6 @@ function AdminHeader() {
     try {
       await dispatch(logout()).unwrap(); // Await the logout thunk
       toast.success("Logged out successfully!"); // Show success toast
-      // Removed dispatch(reset()) from here to prevent premature justLoggedOut reset
       navigate("/login"); // Navigate to login page
 
       // Set justLoggedOut to false after a short delay
@@ -112,6 +111,18 @@ function AdminHeader() {
                 <span className="inline-block sm:hidden">Tix</span>
               </Link>
             </li>
+            {/* Notification Bell */}
+            <li>
+              <Link
+                to={"/user-notifications"} // Link to your notifications page
+                className="flex items-center text-gray-300 hover:text-purple-400 font-semibold transition-colors duration-300 text-sm sm:text-base"
+              >
+                <FaBell className="mr-1 sm:mr-2 text-purple-400 text-lg sm:text-xl" />
+                <span className="hidden sm:inline-block">Notifications</span>
+                <span className="inline-block sm:hidden">Notif</span>
+              </Link>
+            </li>
+            {/* End Notification Bell */}
             <li>
               <Link
                 to={"/admin-dashboard/settings"}

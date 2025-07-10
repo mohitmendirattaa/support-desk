@@ -18,7 +18,6 @@ const initialState = {
   message: "",
 };
 
-// Async Thunks - Removed 'export' from individual thunk definitions
 const createTicket = createAsyncThunk(
   "ticket/create",
   async (ticketData, thunkAPI) => {
@@ -68,18 +67,27 @@ const getSingleTicketAsAdmin = createAsyncThunk(
   }
 );
 
+// --- START OF MODIFICATION ---
 const updateTicketStatus = createAsyncThunk(
   "ticket/updateStatus",
-  async ({ ticketId, newStatus }, thunkAPI) => {
+  async ({ ticketId, newStatus, reason }, thunkAPI) => {
+    // Added 'reason' to the destructured payload
     try {
       const token = thunkAPI.getState().auth.user.token;
-      return await ticketService.updateTicketStatus(ticketId, newStatus, token);
+      // Pass 'reason' to the service function
+      return await ticketService.updateTicketStatus(
+        ticketId,
+        newStatus,
+        reason,
+        token
+      );
     } catch (error) {
       const message = getErrorMessage(error);
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
+// --- END OF MODIFICATION ---
 
 const getAllTicketsForAdmin = createAsyncThunk(
   "tickets/getAllForAdmin",
@@ -269,7 +277,6 @@ export const ticketSlice = createSlice({
 
 export const { reset } = ticketSlice.actions;
 
-// Export all async thunks and the reducer in a single statement
 export {
   createTicket,
   getTickets,

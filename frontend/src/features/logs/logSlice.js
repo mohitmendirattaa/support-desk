@@ -17,10 +17,12 @@ const initialState = {
  * @desc Async Thunk to fetch all logs from the backend.
  * This thunk will handle the API call to your /api/logs endpoint.
  * It expects a JWT token for authentication from the auth slice state.
+ * @param {object} filters - An object containing filtering criteria (e.g., { from: "...", to: "...", userId: "..." }).
  */
 export const fetchLogs = createAsyncThunk(
   "logs/fetchAll", // Action type prefix
-  async (_, thunkAPI) => {
+  async (filters = {}, thunkAPI) => {
+    // Added 'filters' as the first argument, defaulting to an empty object
     try {
       const token = thunkAPI.getState().auth.user?.token;
       if (!token) {
@@ -29,7 +31,8 @@ export const fetchLogs = createAsyncThunk(
           "No authentication token found. Please log in."
         );
       }
-      return await logService.getLogs(token);
+      // Pass the filters object to the logService.getLogs function
+      return await logService.getLogs(filters, token);
     } catch (error) {
       const message =
         (error.response &&

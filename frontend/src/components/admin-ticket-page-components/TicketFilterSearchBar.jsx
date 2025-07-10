@@ -3,7 +3,8 @@ import { Search } from "lucide-react"; // Import Search icon
 
 function TicketFilterSearchBar({ searchTerm, onSearchChange, onClearSearch }) {
   return (
-    <div className="mb-6 flex items-center space-x-3">
+    // REMOVED mb-6 from here
+    <div className="flex items-center space-x-3">
       <div className="relative flex-1">
         <Search
           className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"

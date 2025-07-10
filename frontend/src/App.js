@@ -21,6 +21,8 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import SystemSettings from "./pages/SystemSettings";
 import DataManagementPage from "./pages/DataManagementPage.jsx";
 import TicketStatusPage from "./pages/TicketStatusPage";
+import NotificationPage from "./pages/NotificationPage"; // Existing import from your input
+import UserNotification from "./pages/UserNotification"; // ✅ ADDED: Import for UserNotification
 
 import PrivateRoute from "./components/PrivateRoute";
 import AdminLayout from "./components/AdminLayout";
@@ -35,12 +37,15 @@ function App() {
         <Route element={<UserLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          {/* Register is typically for both user/admin to create accounts */}
+          <Route path="/register" element={<Register />} />
 
           <Route element={<PrivateRoute />}>
             <Route path="/new-ticket" element={<NewTicket />} />
             <Route path="/tickets" element={<Tickets />} />
             <Route path="/tickets/:ticketId" element={<Ticket />} />
             <Route path="/profile" element={<UserProfile />} />
+            <Route path="/user-notifications" element={<UserNotification />} />
           </Route>
         </Route>
 
@@ -68,6 +73,10 @@ function App() {
           <Route path="new-ticket" element={<NewTicket />} />
           <Route path="tickets" element={<Tickets />} />
           <Route path="tickets/:ticketId" element={<Ticket />} />
+          <Route path="ticket-management" element={<AdminTicketsPage />} />
+          <Route path="notifications" element={<NotificationPage />} />
+          {/* <Route path="/user-notifications" element={<UserNotification />} /> */}
+         
         </Route>
       </Routes>
       <ToastContainer />

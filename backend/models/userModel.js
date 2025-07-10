@@ -213,6 +213,22 @@ const UserModel = {
       throw new Error(`Error updating user: ${err.message}`);
     }
   },
+
+  findByRole: async (role) => {
+    const pool = getSqlPool();
+    try {
+      const request = pool.request();
+      request.input("role", sql.NVarChar(50), role);
+      const result = await request.query(`
+        SELECT id, name, employeeCode, contact, email, location, company, role, status, createdAt, updatedAt
+        FROM Users
+        WHERE role = @role;
+      `);
+      return result.recordset; // returns array of users with the role
+    } catch (err) {
+      throw new Error(`Error finding users by role: ${err.message}`);
+    }
+  },
 };
 
 module.exports = UserModel;

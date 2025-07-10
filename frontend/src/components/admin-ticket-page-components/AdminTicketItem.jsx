@@ -3,13 +3,6 @@ import React from "react";
 import { Link } from "react-router-dom"; // Import Link for navigation
 import { Trash2 } from "lucide-react"; // Import Trash2 icon for delete
 
-/**
- * @param {Object} props - Component props
- * @param {Object} props.ticket - The ticket data object
- * @param {function(string): void} props.onDelete - Callback function to handle individual ticket deletion, takes ticket ID as argument
- * @param {boolean} props.isSelected - Indicates if the current ticket is selected
- * @param {function(string, boolean): void} props.onSelect - Callback function to handle ticket selection (ID, isChecked)
- */
 function AdminTicketItem({ ticket, onDelete, isSelected, onSelect }) {
   // Helper to determine status badge styling
   const getStatusClass = (status) => {
@@ -23,13 +16,13 @@ function AdminTicketItem({ ticket, onDelete, isSelected, onSelect }) {
       case "hold":
         return "bg-yellow-500 text-white font-bold";
       case "pending":
-        return "bg-orange-500 text-white font-bold"; 
+        return "bg-orange-500 text-white font-bold";
       case "resolved":
-        return "bg-green-500 text-white font-bold"; 
+        return "bg-green-500 text-white font-bold";
       case "reopened":
-        return "bg-cyan-500 text-white font-bold"; 
+        return "bg-cyan-500 text-white font-bold";
       default:
-        return "bg-purple-100 text-white font-bold"; 
+        return "bg-purple-100 text-white font-bold";
     }
   };
   // Helper to determine priority badge styling
@@ -60,6 +53,13 @@ function AdminTicketItem({ ticket, onDelete, isSelected, onSelect }) {
       {/* Ticket ID */}
       <td className="px-4 py-1.5 whitespace-nowrap text-sm font-medium text-gray-900">
         {ticket.id || "N/A"}
+      </td>
+      <td className="px-4 py-1.5 whitespace-nowrap text-sm text-gray-600">
+        {new Date(ticket.startDate).toLocaleDateString("en-IN", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }) || "N/A"}
       </td>
       {/* Category */}
       <td className="px-6 py-1.5 whitespace-nowrap text-sm text-gray-600">

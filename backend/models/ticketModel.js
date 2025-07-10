@@ -1,3 +1,4 @@
+// backend/models/ticketModel.js
 const sql = require("mssql");
 const getSqlPool = require("../config/db").getSqlPool;
 
@@ -286,7 +287,8 @@ const TicketModel = {
     }
   },
 
-  updateStatus: async (id, newStatus) => {
+  // ✅ UPDATED: Ensure userId is returned in OUTPUT and the return object
+  updateStatus: async (id, newStatus, reason) => {
     const pool = getSqlPool();
     try {
       const validStatuses = [
@@ -306,18 +308,37 @@ const TicketModel = {
       request.input("id", sql.NVarChar(255), id);
       request.input("newStatus", sql.NVarChar(50), newStatus);
 
-      const result = await request.query(`
+      const sqlQuery = `
         UPDATE Tickets
         SET status = @newStatus, updatedAt = GETUTCDATE()
-        OUTPUT INSERTED.id, INSERTED.status, INSERTED.updatedAt
+        OUTPUT INSERTED.id, INSERTED.userId, INSERTED.status, INSERTED.updatedAt,
+               INSERTED.priority, INSERTED.subCategory, INSERTED.description,
+               INSERTED.startDate, INSERTED.endDate, INSERTED.ServiceType, INSERTED.category,
+               INSERTED.Attachment, INSERTED.AttachmentMimeType, INSERTED.AttachmentFileName, INSERTED.createdAt
         WHERE id = @id;
-      `);
+      `;
+      const result = await request.query(sqlQuery);
 
       if (result.recordset && result.recordset[0]) {
+        const updatedTicket = result.recordset[0];
         return {
-          id: result.recordset[0].id,
-          status: result.recordset[0].status,
-          updatedAt: result.recordset[0].updatedAt,
+          id: updatedTicket.id,
+          userId: updatedTicket.userId, // ✅ Now included
+          priority: updatedTicket.priority,
+          subCategory: updatedTicket.subCategory,
+          description: updatedTicket.description,
+          status: updatedTicket.status,
+          startDate: updatedTicket.startDate,
+          endDate: updatedTicket.endDate,
+          service: updatedTicket.ServiceType, // Use ServiceType from DB
+          category: updatedTicket.category,
+          attachment: updatedTicket.Attachment
+            ? updatedTicket.Attachment.toString("base64")
+            : null,
+          attachmentMimeType: updatedTicket.AttachmentMimeType,
+          attachmentFileName: updatedTicket.AttachmentFileName,
+          createdAt: updatedTicket.createdAt,
+          updatedAt: updatedTicket.updatedAt,
         };
       }
       return null;
@@ -326,6 +347,7 @@ const TicketModel = {
     }
   },
 
+  // ✅ UPDATED: Ensure userId is returned in OUTPUT and the return object
   update: async (id, fieldsToUpdate) => {
     const pool = getSqlPool();
     try {
@@ -336,6 +358,7 @@ const TicketModel = {
         Object.keys(fieldsToUpdate).length === 1 &&
         fieldsToUpdate.hasOwnProperty("status")
       ) {
+        // This case will now correctly return userId because updateStatus is fixed
         return await TicketModel.updateStatus(id, fieldsToUpdate.status);
       }
 
@@ -411,13 +434,13 @@ const TicketModel = {
       if (updatedRecord) {
         return {
           id: updatedRecord.id,
-          userId: updatedRecord.userId,
+          userId: updatedRecord.userId, // ✅ Now included
           description: updatedRecord.description,
           priority: updatedRecord.priority,
           subCategory: updatedRecord.subCategory,
           status: updatedRecord.status,
           startDate: updatedRecord.startDate,
-          endDate: updatedRecord.endDate,
+          endDate: updatedRecord.endDate, // Fixed typo here
           ServiceType: updatedRecord.ServiceType,
           category: updatedRecord.category,
           createdAt: updatedRecord.createdAt,
@@ -473,7 +496,8 @@ const TicketModel = {
             t.AttachmentFileName,
             u.id AS 'user.id',
             u.name AS 'user.name',
-            u.email AS 'user.email'
+            u.email AS 'user.email',
+            u.employeeCode AS 'user.employeeCode'
         FROM
             Tickets t
         JOIN
@@ -504,6 +528,7 @@ const TicketModel = {
           id: record["user.id"],
           name: record["user.name"],
           email: record["user.email"],
+          employeeCode: record["user.employeeCode"],
         },
       }));
     } catch (err) {

@@ -4,42 +4,45 @@ import { getTickets } from "../features/tickets/ticketSlice";
 import Spinner from "../components/Spinner";
 import BackButton from "../components/BackButton";
 import TicketItem from "../components/TicketItem";
-import { useLocation } from "react-router-dom"; // <--- IMPORT useLocation
+import { useLocation, useNavigate } from "react-router-dom";
+import { FaBell } from "react-icons/fa";
+import { getUnseenUserNotificationsCount } from "../features/userNotifications/userNotificationSlice";
 
 function Tickets() {
   const { tickets, isLoading, isError, message } = useSelector(
     (state) => state.tickets
   );
+  const { unseenCount } = useSelector((state) => state.userNotifications);
   const dispatch = useDispatch();
-  const location = useLocation(); // <--- INITIALIZE useLocation
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // State for pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Number of tickets to display per page
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (isError) {
       console.error(message);
     }
-    // Fetch tickets when the component mounts or dependencies change
     dispatch(getTickets());
+    dispatch(getUnseenUserNotificationsCount());
   }, [dispatch, isError, message]);
 
-  // Calculate the tickets to display on the current page
   const indexOfLastTicket = currentPage * itemsPerPage;
   const indexOfFirstTicket = indexOfLastTicket - itemsPerPage;
   const currentTickets = tickets.slice(indexOfFirstTicket, indexOfLastTicket);
 
-  // Calculate total pages for pagination controls
   const totalPages = Math.ceil(tickets.length / itemsPerPage);
 
-  // Function to change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Functions to navigate to next/previous page
   const nextPage = () =>
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+
+  const handleNotificationsClick = () => {
+    navigate("/user-notifications");
+  };
 
   if (isLoading) {
     return <Spinner />;
@@ -73,9 +76,6 @@ function Tickets() {
     );
   }
 
-  // <--- DETERMINE THE BASE PATH HERE
-  // If the URL starts with /admin-dashboard, the basePath should be /admin-dashboard/tickets
-  // Otherwise, it's just /tickets (for the regular user view)
   const basePath = location.pathname.startsWith("/admin-dashboard")
     ? "/admin-dashboard/tickets"
     : "/tickets";
@@ -85,16 +85,33 @@ function Tickets() {
       <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 bg-gray-50">
         <header className="flex justify-between items-center mb-8">
           <BackButton />
+
           <h1 className="text-4xl font-extrabold text-blue-800 tracking-tight text-center flex-grow">
             My Support Tickets
           </h1>
-          <div className="w-auto opacity-0">
-            <BackButton />
-          </div>
+
+          <button
+            onClick={handleNotificationsClick}
+            className="relative text-blue-600 hover:text-blue-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 p-2 rounded-full"
+            aria-label="View Notifications"
+          >
+            <FaBell className="text-3xl" />
+            {unseenCount > 0 && (
+              <span
+                className="absolute inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full"
+                style={{
+                  top: "0px",
+                  right: "0px",
+                  transform: "translate(20%, -20%)",
+                }} // Adjusted positioning
+              >
+                {unseenCount}
+              </span>
+            )}
+          </button>
         </header>
 
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          {/* Table Header */}
           <div className="grid grid-cols-1 md:grid-cols-7 gap-8 p-4 lg:p-6 border-b border-gray-200 bg-blue-50 font-semibold text-blue-700 text-sm uppercase">
             <div className="hidden md:block">Priority</div>
             <div className="hidden md:block">Start Date</div>
@@ -107,7 +124,6 @@ function Tickets() {
 
           <div className="divide-y divide-gray-100">
             {currentTickets.map((ticket) => (
-              // <--- PASS THE basePath TO TicketItem HERE
               <TicketItem
                 ticket={ticket}
                 key={ticket._id}
@@ -126,7 +142,6 @@ function Tickets() {
             >
               Previous
             </button>
-            {/* Render page number buttons */}
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={page}
